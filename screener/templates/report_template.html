@@ -1,0 +1,390 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EUR 4,600 High-Risk Stock Screen — {{ generated_at }}</title>
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+<style>
+  :root {
+    color-scheme: light;
+    --surface-0: #ffffff;
+    --surface-1: #f7f7f5;
+    --surface-2: #eeeeeb;
+    --text-primary: #16160f;
+    --text-secondary: #52514e;
+    --text-muted: #83817a;
+    --border: #e0dfd9;
+    --blue: #2a78d6;
+    --orange: #eb6834;
+    --good: #0ca30c;
+    --warning: #fab219;
+    --serious: #ec835a;
+    --critical: #d03b3b;
+    --badge-fact-bg: #e5f0fc; --badge-fact-fg: #184f95;
+    --badge-est-bg: #fdf1e0; --badge-est-fg: #a15c00;
+    --badge-op-bg: #f4eefb; --badge-op-fg: #4a3aa7;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) {
+      color-scheme: dark;
+      --surface-0: #171715;
+      --surface-1: #1e1e1c;
+      --surface-2: #262623;
+      --text-primary: #ffffff;
+      --text-secondary: #c3c2b7;
+      --text-muted: #8f8d84;
+      --border: #35342f;
+      --badge-fact-bg: #16294a; --badge-fact-fg: #9ec5f4;
+      --badge-est-bg: #402c0a; --badge-est-fg: #f0b95a;
+      --badge-op-bg: #241a3d; --badge-op-fg: #b9aef5;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --surface-0: #171715;
+    --surface-1: #1e1e1c;
+    --surface-2: #262623;
+    --text-primary: #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted: #8f8d84;
+    --border: #35342f;
+    --badge-fact-bg: #16294a; --badge-fact-fg: #9ec5f4;
+    --badge-est-bg: #402c0a; --badge-est-fg: #f0b95a;
+    --badge-op-bg: #241a3d; --badge-op-fg: #b9aef5;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 0;
+    background: var(--surface-1); color: var(--text-primary);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.5;
+  }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 24px 20px 80px; }
+  header.hero {
+    background: linear-gradient(135deg, #184f95, #2a78d6);
+    color: #fff; padding: 40px 20px; margin-bottom: 28px;
+  }
+  header.hero .wrap { padding: 0; }
+  header.hero h1 { margin: 0 0 8px; font-size: 1.8rem; }
+  header.hero p { margin: 4px 0; opacity: 0.92; font-size: 0.95rem; }
+  h2 { font-size: 1.4rem; margin-top: 48px; border-bottom: 2px solid var(--border); padding-bottom: 8px; }
+  h3 { font-size: 1.15rem; margin-top: 28px; }
+  .card {
+    background: var(--surface-0); border: 1px solid var(--border); border-radius: 10px;
+    padding: 20px; margin: 16px 0; overflow-x: auto;
+  }
+  table { border-collapse: collapse; width: 100%; font-size: 0.88rem; }
+  th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  th { color: var(--text-secondary); font-weight: 600; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.03em; }
+  tr:hover td { background: var(--surface-1); }
+  .table-scroll { overflow-x: auto; }
+  .badge {
+    display: inline-block; font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.03em; padding: 2px 7px; border-radius: 5px; margin-left: 6px; vertical-align: middle;
+  }
+  .badge-fact { background: var(--badge-fact-bg); color: var(--badge-fact-fg); }
+  .badge-estimate { background: var(--badge-est-bg); color: var(--badge-est-fg); }
+  .badge-opinion { background: var(--badge-op-bg); color: var(--badge-op-fg); }
+  .pill {
+    display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 0.75rem; font-weight: 600;
+  }
+  .pill-core { background: var(--badge-fact-bg); color: var(--badge-fact-fg); }
+  .pill-satellite { background: var(--badge-est-bg); color: var(--badge-est-fg); }
+  .stock-card { border: 1px solid var(--border); border-radius: 12px; padding: 24px; margin: 24px 0; background: var(--surface-0); }
+  .stock-card h3 { margin-top: 0; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 780px) { .grid-2 { grid-template-columns: 1fr; } }
+  .kv { display: grid; grid-template-columns: auto 1fr; gap: 4px 14px; font-size: 0.88rem; margin: 10px 0; }
+  .kv dt { color: var(--text-secondary); }
+  .kv dd { margin: 0; font-weight: 600; }
+  .muted { color: var(--text-muted); font-size: 0.85rem; }
+  .risk-chip {
+    display: inline-flex; align-items: center; gap: 6px; font-weight: 700; font-size: 1rem;
+    padding: 4px 12px; border-radius: 8px; background: var(--surface-2);
+  }
+  .exec-summary p { max-width: 780px; }
+  .fee-note { background: var(--badge-est-bg); color: var(--badge-est-fg); padding: 14px 18px; border-radius: 8px; font-size: 0.9rem; }
+  footer { margin-top: 60px; padding-top: 20px; border-top: 1px solid var(--border); color: var(--text-muted); font-size: 0.8rem; }
+  .plotly-card { background: #fff; border-radius: 8px; padding: 8px; }
+  a { color: var(--blue); }
+  .status-rejected { color: var(--text-muted); font-style: italic; }
+  .toc { font-size: 0.9rem; }
+  .toc a { display: inline-block; margin-right: 14px; }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <h1>High-Risk Growth Screen — EUR 4,600 / 3-Year Horizon</h1>
+    <p>Semiconductors · Energy &amp; Digital Infrastructure · AI / Enterprise Software · Defence · Consumer Goods</p>
+    <p>Report generated {{ generated_at }} · All figures fetched live at runtime from Yahoo Finance (yfinance), with FX from Yahoo / Frankfurter (ECB) as a no-key fallback.</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <nav class="toc">
+    <a href="#exec-summary">Executive summary</a>
+    <a href="#universe">Starting universe &amp; screening</a>
+    <a href="#summary-table">Summary table</a>
+    <a href="#picks">Stock cards</a>
+    <a href="#sizing">Position sizing</a>
+    <a href="#limitations">Limitations &amp; disclaimer</a>
+  </nav>
+
+  <h2 id="exec-summary">Executive summary</h2>
+  <div class="card exec-summary">
+    <p>
+      This report screens a disclosed, curated starting universe of {{ n_universe }} liquid stocks across five
+      preferred sectors, applies explicit quantitative filters, and ranks the survivors with a transparent composite
+      score (revenue growth, forward earnings growth, in-sector valuation, and balance-sheet leverage). The
+      {{ n_selected }} names below are the highest-scoring picks after guaranteeing at least one name per preferred
+      sector. Position sizing for your EUR {{ "{:,.0f}".format(capital_eur) }} allocates capital by conviction tier
+      (core vs. satellite), not equal-weight, and explicitly quantifies transaction-cost drag and FX exposure.
+    </p>
+    <p class="muted">
+      Badges throughout this report distinguish
+      <span class="badge badge-fact">Fact</span> (pulled live from Yahoo Finance, as-of date shown),
+      <span class="badge badge-estimate">Estimate</span> (a calculation built on disclosed assumptions), and
+      <span class="badge badge-opinion">Opinion</span> (qualitative analyst judgment, e.g. moat durability).
+    </p>
+    <div class="plotly-card">{{ composite_chart|safe }}</div>
+  </div>
+
+  <h2 id="universe">Starting universe &amp; screening <span class="badge badge-fact">Fact</span></h2>
+  <div class="card">
+    <p>
+      Screening filters applied: market cap &gt; EUR {{ "{:,.0f}".format(1500000000) }}, at least 4 fiscal years of
+      revenue on file, and positive latest-year revenue. {{ n_passed }} of {{ n_universe }} names passed.
+      The valuation benchmark used throughout ("sector peer median forward P/E") is computed from this same
+      in-house universe — not a third-party index — so it is fully reproducible without a paid data subscription.
+    </p>
+    <div class="table-scroll">
+    <table>
+      <thead><tr><th>Ticker</th><th>Name</th><th>Sector</th><th>Exchange</th><th>Ccy</th><th>Mkt cap (EUR)</th><th>Status</th><th>Reasons if rejected</th></tr></thead>
+      <tbody>
+      {% for row in universe_table %}
+        <tr class="{{ 'status-rejected' if row.status == 'REJECTED' else '' }}">
+          <td><strong>{{ row.ticker }}</strong></td>
+          <td>{{ row.name }}</td>
+          <td>{{ row.sector }}</td>
+          <td>{{ row.exchange }}</td>
+          <td>{{ row.currency }}</td>
+          <td>{{ "%.2f bn"|format(row.market_cap_eur / 1e9) if row.market_cap_eur else "N/A" }}</td>
+          <td>{{ row.status }}</td>
+          <td>{{ row.reasons|join("; ") }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  </div>
+
+  <h2 id="summary-table">Summary table — the {{ n_selected }} selected picks</h2>
+  <div class="card">
+    <div class="table-scroll">
+    <table>
+      <thead><tr>
+        <th>#</th><th>Ticker</th><th>Sector</th><th>Price (EUR)</th><th>Trailing P/E</th><th>Forward P/E</th>
+        <th>Sector peer median fwd P/E</th><th>Rev. CAGR 5y</th><th>D/E</th><th>Net Debt/EBITDA</th>
+        <th>Div. yield</th><th>Risk (1-10)</th><th>Score</th>
+      </tr></thead>
+      <tbody>
+      {% for p in picks %}
+        <tr>
+          <td>{{ loop.index }}</td>
+          <td><strong><a href="#{{ p.ticker }}">{{ p.ticker }}</a></strong></td>
+          <td>{{ p.sector }}</td>
+          <td>{{ "%.2f"|format(p.price_eur) if p.price_eur else "N/A" }}</td>
+          <td>{{ "%.1f"|format(p.trailing_pe) if p.trailing_pe else "N/A" }}</td>
+          <td>{{ "%.1f"|format(p.forward_pe) if p.forward_pe else "N/A" }}</td>
+          <td>{{ "%.1f"|format(p.sector_peer_median_pe) if p.sector_peer_median_pe else "N/A" }}</td>
+          <td>{{ "%.1f%%"|format(p.revenue.cagr * 100) if p.revenue.cagr is not none else "N/A" }}</td>
+          <td>{{ "%.2f"|format(p.leverage.debt_to_equity) if p.leverage.debt_to_equity is not none else "N/A" }}</td>
+          <td>{{ "%.2f"|format(p.leverage.net_debt_to_ebitda) if p.leverage.net_debt_to_ebitda is not none else "N/A" }}</td>
+          <td>{{ "%.2f%%"|format(p.dividend.dividend_yield_pct) if p.dividend.dividend_yield_pct is not none else "N/A" }}</td>
+          <td>{{ p.risk.rating }}</td>
+          <td>{{ "%.2f"|format(p.composite_score) }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  </div>
+
+  <h2 id="picks">Stock-by-stock analysis</h2>
+
+  {% for p in picks %}
+  <div class="stock-card" id="{{ p.ticker }}">
+    <h3>{{ loop.index }}. {{ p.ticker }} — {{ p.name }} <span class="muted">({{ p.exchange }}, {{ p.currency }})</span></h3>
+    <p class="muted">Sector: {{ p.sector }} · As-of {{ p.as_of }} {% if p.data_error %} · <strong>Data warning:</strong> {{ p.data_error }}{% endif %}</p>
+
+    <div class="grid-2">
+      <div>
+        <h4>1–2. Valuation <span class="badge badge-fact">Fact</span></h4>
+        <dl class="kv">
+          <dt>Price (native)</dt><dd>{{ "%.2f"|format(p.price_native) if p.price_native else "N/A" }} {{ p.currency }}</dd>
+          <dt>Price (EUR)</dt><dd>{{ "%.2f"|format(p.price_eur) if p.price_eur else "N/A" }}</dd>
+          <dt>Trailing P/E</dt><dd>{{ "%.1f"|format(p.trailing_pe) if p.trailing_pe else "N/A" }}</dd>
+          <dt>Forward P/E</dt><dd>{{ "%.1f"|format(p.forward_pe) if p.forward_pe else "N/A" }}</dd>
+          <dt>Sector peer median (fwd P/E)</dt><dd>{{ "%.1f"|format(p.sector_peer_median_pe) if p.sector_peer_median_pe else "N/A" }} <span class="muted">(benchmark: in-universe {{ p.sector }} peers)</span></dd>
+        </dl>
+
+        <h4>3. Revenue growth (5y) <span class="badge badge-fact">Fact</span></h4>
+        {% if p.revenue.warning %}<p class="muted">{{ p.revenue.warning }}</p>{% endif %}
+        <p>CAGR: <strong>{{ "%.1f%%"|format(p.revenue.cagr * 100) if p.revenue.cagr is not none else "N/A" }}</strong>
+           &nbsp;|&nbsp; Year-by-year:
+           {% for y in p.revenue.years %}{{ y }}: {{ "%.2f"|format(p.revenue.revenues[loop.index0] / 1e9) }}bn{{ ", " if not loop.last }}{% endfor %}
+        </p>
+        <div class="plotly-card">{{ p.revenue_chart|safe }}</div>
+
+        <h4>4. Leverage <span class="badge badge-fact">Fact</span></h4>
+        <dl class="kv">
+          <dt>Debt/Equity</dt><dd>{{ "%.2f"|format(p.leverage.debt_to_equity) if p.leverage.debt_to_equity is not none else "N/A" }}</dd>
+          <dt>Net Debt/EBITDA</dt><dd>{{ "%.2f"|format(p.leverage.net_debt_to_ebitda) if p.leverage.net_debt_to_ebitda is not none else "N/A" }}</dd>
+        </dl>
+        {% if p.leverage.warning %}<p class="muted">{{ p.leverage.warning }}</p>{% endif %}
+
+        <h4>5. Dividend <span class="badge badge-fact">Fact</span></h4>
+        <dl class="kv">
+          <dt>Yield</dt><dd>{{ "%.2f%%"|format(p.dividend.dividend_yield_pct) if p.dividend.dividend_yield_pct is not none else "N/A" }}</dd>
+          <dt>Payout ratio (earnings)</dt><dd>{{ "%.1f%%"|format(p.dividend.payout_ratio * 100) if p.dividend.payout_ratio is not none else "N/A" }}</dd>
+          <dt>FCF payout ratio</dt><dd>{{ "%.1f%%"|format(p.dividend.fcf_payout_ratio * 100) if p.dividend.fcf_payout_ratio is not none else "N/A" }}</dd>
+          <dt>Cut in last 6y?</dt><dd>{{ "Yes" if p.dividend.cut_in_last_6y else "No" }}</dd>
+        </dl>
+        <p class="muted">{{ p.dividend.history_note }}</p>
+      </div>
+
+      <div>
+        <h4>6. Moat <span class="badge badge-opinion">Opinion</span></h4>
+        <p><strong>Source of advantage:</strong> {{ p.moat.source }}</p>
+        <p><strong>Durability:</strong> {{ p.moat.durability }}</p>
+        <p><strong>Main threats:</strong> {{ p.moat.threats }}</p>
+
+        <h4>7. 12-month price targets <span class="badge badge-estimate">Estimate</span></h4>
+        <p class="muted">Method A — multiples: bull/bear peer forward P/E ({{ p.price_targets.multiples.bull_pe_used }}x / {{ p.price_targets.multiples.bear_pe_used }}x, from {{ p.price_targets.multiples.peer_n }} in-sector peers) × forward EPS estimate.</p>
+        {% if p.price_targets.multiples.warning %}
+          <p class="muted">{{ p.price_targets.multiples.warning }}</p>
+        {% else %}
+          <p>Bull: <strong>{{ "%.2f"|format(p.price_targets.multiples.bull_price) }} {{ p.currency }}</strong> &nbsp;|&nbsp;
+             Bear: <strong>{{ "%.2f"|format(p.price_targets.multiples.bear_price) }} {{ p.currency }}</strong></p>
+        {% endif %}
+        <p class="muted">Method B — simplified DCF: {{ p.price_targets.dcf.projection_years }}y FCF projection at
+          {{ "%.1f%%"|format(p.price_targets.dcf.bull_growth_assumption * 100) if p.price_targets.dcf.bull_growth_assumption is defined else "N/A" }} (bull) /
+          {{ "%.1f%%"|format(p.price_targets.dcf.bear_growth_assumption * 100) if p.price_targets.dcf.bear_growth_assumption is defined else "N/A" }} (bear) growth,
+          {{ "%.1f%%"|format(p.price_targets.dcf.discount_rate * 100) if p.price_targets.dcf.discount_rate is defined else "N/A" }} discount rate,
+          {{ "%.1f%%"|format(p.price_targets.dcf.terminal_growth * 100) if p.price_targets.dcf.terminal_growth is defined else "N/A" }} terminal growth.</p>
+        {% if p.price_targets.dcf.warning %}
+          <p class="muted">{{ p.price_targets.dcf.warning }}</p>
+        {% else %}
+          <p>Bull: <strong>{{ "%.2f"|format(p.price_targets.dcf.bull_price) }} {{ p.currency }}</strong> &nbsp;|&nbsp;
+             Bear: <strong>{{ "%.2f"|format(p.price_targets.dcf.bear_price) }} {{ p.currency }}</strong></p>
+        {% endif %}
+
+        <h4>8. Risk rating <span class="badge badge-estimate">Estimate</span></h4>
+        <p class="risk-chip">{{ p.risk.rating }} / 10</p>
+        <dl class="kv">
+          <dt>Beta</dt><dd>{{ "%.2f"|format(p.risk.drivers.beta) if p.risk.drivers.beta is not none else "N/A" }}</dd>
+          <dt>1y annualized volatility</dt><dd>{{ "%.1f%%"|format(p.risk.drivers.annualized_volatility_1y * 100) if p.risk.drivers.annualized_volatility_1y is not none else "N/A" }}</dd>
+          <dt>Leverage metric used</dt><dd>{{ "%.2f"|format(p.risk.drivers.leverage_metric) if p.risk.drivers.leverage_metric is not none else "N/A" }}</dd>
+          <dt>Non-EUR currency exposure</dt><dd>{{ "Yes" if p.risk.drivers.non_eur_currency else "No" }}</dd>
+        </dl>
+
+        <h4>9. Entry zone &amp; stop-loss <span class="badge badge-fact">Fact-derived</span></h4>
+        <dl class="kv">
+          <dt>50-day MA</dt><dd>{{ "%.2f"|format(p.technicals.ma50) if p.technicals.ma50 is not none else "N/A" }} {{ p.currency }}</dd>
+          <dt>14-day ATR</dt><dd>{{ "%.2f"|format(p.technicals.atr14) if p.technicals.atr14 is not none else "N/A" }} {{ p.currency }}</dd>
+          <dt>Entry zone</dt><dd>{{ p.technicals.entry_zone_low }} – {{ p.technicals.entry_zone_high }} {{ p.currency }}</dd>
+          <dt>Stop-loss</dt><dd>{{ p.technicals.stop_loss }} {{ p.currency }} <span class="muted">(entry low − 2×ATR14)</span></dd>
+        </dl>
+        <div class="plotly-card">{{ p.price_chart|safe }}</div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+
+  <h2 id="sizing">Position sizing — EUR {{ "{:,.0f}".format(capital_eur) }}</h2>
+  <div class="card">
+    <p>
+      <strong>Is {{ n_selected }} positions too many for EUR {{ "{:,.0f}".format(capital_eur) }}?</strong> Likely yes,
+      in the strict sense that {{ n_selected }} equal-weight positions would average only
+      EUR {{ "%.0f"|format(capital_eur / n_selected) }} each before fees — thin enough that a single flat
+      per-trade fee assumption of EUR {{ "%.2f"|format(allocation.rows[0].fee_eur) }} already represents a real drag
+      (see below), and monitoring {{ n_selected }} names on a 3-year, very-high-risk mandate is a real ongoing
+      burden. Rather than dropping to fewer names (which would break the requested sector coverage), this report
+      uses <strong>conviction-weighted</strong> sizing: the top {{ allocation.rows|selectattr("tier","equalto","core")|list|length }}
+      scored names get a larger "core" weight, the remaining {{ allocation.rows|selectattr("tier","equalto","satellite")|list|length }}
+      get a smaller "satellite/starter" weight. This assumes your broker supports fractional shares (e.g. Trade
+      Republic, DEGIRO, Interactive Brokers, Scalable Capital) — verify this before placing orders.
+    </p>
+
+    <div class="grid-2">
+      <div class="plotly-card">{{ allocation_pie|safe }}</div>
+      <div class="plotly-card">{{ allocation_bar|safe }}</div>
+    </div>
+
+    <div class="table-scroll">
+    <table>
+      <thead><tr><th>Ticker</th><th>Sector</th><th>Tier</th><th>Weight</th><th>EUR amount</th><th>Price</th><th>Est. shares</th><th>Fee</th></tr></thead>
+      <tbody>
+      {% for r in allocation.rows %}
+        <tr>
+          <td><strong>{{ r.ticker }}</strong></td>
+          <td>{{ r.sector }}</td>
+          <td><span class="pill pill-{{ r.tier }}">{{ r.tier }}</span></td>
+          <td>{{ "%.1f%%"|format(r.weight_pct) }}</td>
+          <td>{{ "%.2f"|format(r.eur_amount) }}</td>
+          <td>{{ "%.2f"|format(r.price_native) if r.price_native else "N/A" }} {{ r.currency }}</td>
+          <td>{{ "%.3f"|format(r.shares) if r.shares else "N/A" }}</td>
+          <td>{{ "%.2f"|format(r.fee_eur) }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+
+    <div class="fee-note">
+      <strong>Transaction costs:</strong> {{ allocation.n_positions }} trades × EUR {{ "%.2f"|format(allocation.rows[0].fee_eur) }} (assumed flat fee)
+      = EUR {{ "%.2f"|format(allocation.total_fees_eur) }}, i.e. <strong>{{ "%.2f%%"|format(allocation.fee_drag_pct) }}</strong>
+      of the EUR {{ "{:,.0f}".format(capital_eur) }} capital, one-time. Investable after fees: EUR {{ "%.2f"|format(allocation.investable_eur) }}.
+      <br><strong>FX exposure:</strong> {{ "%.1f%%"|format(allocation.non_eur_exposure_pct) }} of the portfolio is
+      denominated outside EUR. An illustrative 10% adverse move in those currencies vs. EUR would swing portfolio
+      value by roughly EUR {{ "%.2f"|format(allocation.fx_10pct_shock_impact_eur) }}.
+    </div>
+  </div>
+
+  <h2 id="limitations">Limitations &amp; disclaimer</h2>
+  <div class="card">
+    <ul>
+      <li>Data is pulled from Yahoo Finance via <code>yfinance</code> at run time; Yahoo's data can lag, be revised,
+          or occasionally be unavailable/rate-limited for a given ticker — any such gap is flagged as "N/A", never
+          invented.</li>
+      <li>The valuation benchmark is an in-house peer median from the curated universe in this repo, not a
+          professional third-party index (e.g. no Bloomberg/FactSet/Damodaran subscription was used).</li>
+      <li>Price targets are estimates built on disclosed, simplified methodologies (peer multiples; single-stage
+          DCF with a constant growth/discount rate) — they are not guarantees, and small changes in the growth or
+          discount-rate assumptions materially move the output.</li>
+      <li>Moat/competitive-advantage assessments are qualitative analyst opinion grounded in publicly known
+          business characteristics, not derived from the live data pull.</li>
+      <li>Entry zones and stop-losses are derived mechanically from recent price history (50-day moving average,
+          14-day ATR) — they are not predictions and do not account for upcoming earnings/news catalysts.</li>
+      <li>Fee, FX-shock, and fractional-share assumptions are illustrative; confirm actual costs and fractional-share
+          availability with your own broker before trading.</li>
+      <li><strong>This is educational research, not personalised financial advice.</strong> It does not account for
+          your full financial situation, tax treatment, or any positions you already hold. Final investment
+          decisions — including whether to invest at all — are yours alone.</li>
+    </ul>
+  </div>
+
+  <footer>
+    <p>Generated {{ generated_at }} by a reproducible Python pipeline (yfinance + Frankfurter/ECB FX fallback). Re-run
+       <code>python main.py</code> at any time to refresh every figure with a new as-of date. Source code and
+       methodology: see the repository README.</p>
+  </footer>
+
+</div>
+</body>
+</html>
