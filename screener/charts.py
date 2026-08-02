@@ -90,3 +90,44 @@ def allocation_bar_chart(rows: list[dict]) -> str:
         yaxis_title="EUR",
     )
     return fig.to_html(full_html=False, include_plotlyjs=False)
+
+
+# Categorical slots 1-3 (blue/orange/aqua) - validated for 3-series all-pairs use.
+BACKTEST_SERIES_COLORS = ["#2a78d6", "#eb6834", "#1baf7a"]
+
+
+def backtest_chart(dates: list[str], portfolio_values: list[float], benchmarks: dict) -> str:
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=dates, y=portfolio_values, mode="lines", name="Proposed portfolio",
+                              line=dict(color=BACKTEST_SERIES_COLORS[0], width=2.5)))
+    for i, (bm_ticker, bm) in enumerate(benchmarks.items()):
+        fig.add_trace(go.Scatter(x=dates, y=bm["values"], mode="lines", name=bm["name"],
+                                  line=dict(color=BACKTEST_SERIES_COLORS[(i + 1) % 3], width=1.5, dash="dot")))
+    fig.update_layout(
+        template=TEMPLATE, height=380, margin=dict(l=50, r=10, t=30, b=30),
+        title="Backtest: EUR value of the proposed allocation vs. benchmarks",
+        yaxis_title="EUR", legend=dict(orientation="h", y=-0.15),
+    )
+    return fig.to_html(full_html=False, include_plotlyjs=False)
+
+
+SCENARIO_COLORS = {
+    "bull": STATUS_GOOD,
+    "base": BLUE,
+    "bear": STATUS_CRITICAL,
+    "rate_shock": "#fab219",
+    "fx_headwind": "#ec835a",
+}
+
+
+def scenario_chart(scenario_keys: list[str], labels: list[str], ending_values: list[float], current_value: float) -> str:
+    colors = [SCENARIO_COLORS.get(k, "#9e9e9e") for k in scenario_keys]
+    fig = go.Figure(go.Bar(x=labels, y=ending_values, marker_color=colors))
+    fig.add_hline(y=current_value, line_dash="dash", line_color="#52514e",
+                  annotation_text="Capital invested today", annotation_position="top left")
+    fig.update_layout(
+        template=TEMPLATE, height=360, margin=dict(l=50, r=10, t=30, b=80),
+        title="Portfolio value in 12 months, by scenario (EUR)",
+        yaxis_title="EUR",
+    )
+    return fig.to_html(full_html=False, include_plotlyjs=False)

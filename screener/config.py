@@ -176,3 +176,19 @@ FRACTIONAL_SHARES_ASSUMED = True   # explicit assumption - verify with your own 
 # FX
 # ---------------------------------------------------------------------------
 FX_FALLBACK_BASE_URL = "https://api.frankfurter.app/latest"
+
+# ---------------------------------------------------------------------------
+# Backtest (historical, look-back only - see report for hindsight-bias caveat)
+# ---------------------------------------------------------------------------
+BACKTEST_PERIOD = "3y"   # matches the stated 3-year investment horizon
+BACKTEST_BENCHMARKS = {
+    "^GSPC": {"name": "S&P 500", "currency": "USD"},
+    "^STOXX": {"name": "STOXX Europe 600", "currency": "EUR"},
+}
+
+# ---------------------------------------------------------------------------
+# Forward-looking scenario analysis (12-month, disclosed methodology per scenario)
+# ---------------------------------------------------------------------------
+SCENARIO_RATE_SHOCK_BPS = 0.02          # +200bps discount-rate shock, DCF bull-growth path
+SCENARIO_FX_SHOCK_PCT = 0.15            # EUR appreciates 15% vs USD/GBP/CHF
+SCENARIO_BASE_FALLBACK_GROWTH = 0.06    # used only if forward EPS growth is unavailable

@@ -66,9 +66,22 @@ to avoid Yahoo Finance rate limits.
 | Entry zone / stop-loss | 50-day moving average pullback band; stop = entry − 2×14-day ATR | Fact-derived |
 | Moat / competitive advantage | Qualitative write-up (`screener/qualitative.py`) | **Opinion**, not from runtime data |
 | Position sizing | Conviction-weighted (top 6 "core", remaining 4 "satellite"), fractional shares assumed, EUR 1/trade fee assumption disclosed | Estimate |
+| Backtest | Trailing 3y, FX-adjusted, buy-and-hold EUR value of the current basket at its conviction weights, vs. S&P 500 and STOXX Europe 600 | Fact-derived, **hindsight-biased by construction** (see caveat below) |
+| 5 forward scenarios | Bull/Base/Bear (peer multiples + DCF), Rate shock (+200bps), FX headwind (EUR +15%) - each a disclosed formula, no probabilities assigned | Estimate |
 
 Full detail and every formula/assumption is shown inline in the report next to the
 numbers it produced.
+
+### Backtest and scenario caveats (important)
+
+- The **backtest** applies today's screened basket retroactively over the trailing 3 years. This is a real,
+  material look-ahead/survivorship bias: the 10 names were selected *because* their trailing growth and valuation
+  looked good, so of course the backtest looks strong. It describes how the current basket has recently behaved -
+  it is **not** proof the screening method would have picked these same names 3 years ago, and it is **not** a
+  forecast.
+- The **5 forward scenarios** are mechanical formulas (peer-multiple percentiles, a single-stage DCF, a fixed
+  +200bps rate shock, a fixed 15% FX shock), not probability-weighted forecasts. No likelihood is assigned to any
+  of the five, and actual outcomes will differ from all of them.
 
 ## Repository layout
 
@@ -81,6 +94,8 @@ screener/
   valuation.py              multiples + simplified DCF bull/bear price targets
   scoring.py                screening filters, composite score, risk rating, top-10 selection
   sizing.py                 EUR 4,600 allocation logic
+  backtest.py               trailing 3y, FX-adjusted backtest vs. S&P 500 / STOXX 600
+  scenarios.py              5 forward-looking 12-month scenarios (bull/base/bear/rate/FX)
   qualitative.py            moat write-ups (OPINION, not runtime data)
   charts.py                 Plotly figure builders
   report.py                 Jinja2 context builder + HTML renderer

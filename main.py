@@ -29,6 +29,8 @@ from screener.metrics import compute_all_metrics
 from screener.scoring import apply_screen, compute_composite_scores, compute_risk_ratings, select_top_n, eur_value
 from screener.valuation import build_price_targets
 from screener.sizing import build_allocation
+from screener.backtest import run_backtest
+from screener.scenarios import build_scenario_analysis, SCENARIO_KEYS
 from screener.report import build_pick_context, render_report
 from screener import charts
 
@@ -98,15 +100,28 @@ def main() -> None:
     print("Building EUR 4,600 position sizing...")
     allocation = build_allocation(selected, passed, scores, fx_rates, instruments)
 
+    print("Running historical backtest of the proposed portfolio...")
+    backtest = run_backtest(selected, allocation, instruments)
+
+    print("Building 5-scenario forward-looking analysis...")
+    scenario_analysis = build_scenario_analysis(
+        selected, raw, passed, price_targets, instruments, fx_rates, allocation
+    )
+
     # --- selected picks snapshot for audit/reproducibility ---
     selected_dump = {
-        t: {
-            "metrics": {k: v for k, v in passed[t].items() if k != "data_error"},
-            "score": scores[t],
-            "risk": risk_ratings[t],
-            "price_targets": price_targets[t],
-        }
-        for t in selected
+        "picks": {
+            t: {
+                "metrics": {k: v for k, v in passed[t].items() if k != "data_error"},
+                "score": scores[t],
+                "risk": risk_ratings[t],
+                "price_targets": price_targets[t],
+            }
+            for t in selected
+        },
+        "allocation": allocation,
+        "backtest": backtest,
+        "scenario_analysis": scenario_analysis,
     }
     selected_path = DATA_DIR / f"selected_10_{as_of_tag}.json"
     selected_path.write_text(json.dumps(selected_dump, indent=2, default=str), encoding="utf-8")
@@ -140,6 +155,17 @@ def main() -> None:
     allocation_pie = charts.allocation_pie_chart(allocation["sector_totals_pct"])
     allocation_bar = charts.allocation_bar_chart(allocation["rows"])
 
+    backtest_chart_html = None
+    if "error" not in backtest:
+        backtest_chart_html = charts.backtest_chart(backtest["dates"], backtest["portfolio_values"], backtest["benchmarks"])
+
+    scenario_chart_html = charts.scenario_chart(
+        SCENARIO_KEYS,
+        [scenario_analysis["meta"][k]["label"] for k in SCENARIO_KEYS],
+        [scenario_analysis["portfolio"][k]["ending_value_eur"] for k in SCENARIO_KEYS],
+        allocation["investable_eur"],
+    )
+
     context = {
         "generated_at": run_started.strftime("%Y-%m-%d %H:%M UTC"),
         "capital_eur": CAPITAL_EUR,
@@ -153,6 +179,11 @@ def main() -> None:
         "allocation": allocation,
         "allocation_pie": allocation_pie,
         "allocation_bar": allocation_bar,
+        "backtest": backtest,
+        "backtest_chart": backtest_chart_html,
+        "scenario_analysis": scenario_analysis,
+        "scenario_keys": SCENARIO_KEYS,
+        "scenario_chart": scenario_chart_html,
     }
 
     out_path = DOCS_DIR / "index.html"
