@@ -10,6 +10,7 @@ import jinja2
 
 from screener.config import Instrument, CAPITAL_EUR
 from screener.qualitative import MOAT
+from screener.business_profile import BUSINESS_PROFILE
 from screener import charts
 
 TEMPLATE_DIR = Path(__file__).parent / "templates"
@@ -39,6 +40,10 @@ def build_pick_context(
     rev = metrics["revenue"]
     tech = metrics["technicals"]
     moat = MOAT.get(ticker, {"source": "N/A", "durability": "N/A", "threats": "N/A"})
+    business = BUSINESS_PROFILE.get(ticker, {
+        "summary": "N/A - no business profile on file for this ticker.",
+        "business_units": [], "customers": "N/A", "key_risks": [],
+    })
 
     rate = fx_rates.get(inst.currency, {}).get("rate")
     price_eur = (metrics["price_native"] * rate) if (metrics["price_native"] and rate) else None
@@ -75,6 +80,7 @@ def build_pick_context(
         "leverage": metrics["leverage"],
         "dividend": metrics["dividend"],
         "moat": moat,
+        "business": business,
         "price_targets": price_targets,
         "risk": risk,
         "technicals": tech,

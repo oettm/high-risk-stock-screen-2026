@@ -151,7 +151,7 @@
       Badges throughout this report distinguish
       <span class="badge badge-fact">Fact</span> (pulled live from Yahoo Finance, as-of date shown),
       <span class="badge badge-estimate">Estimate</span> (a calculation built on disclosed assumptions), and
-      <span class="badge badge-opinion">Opinion</span> (qualitative analyst judgment, e.g. moat durability).
+      <span class="badge badge-opinion">Opinion</span> (qualitative analyst judgment, e.g. moat durability, business overview).
     </p>
     <div class="plotly-card">{{ composite_chart|safe }}</div>
   </div>
@@ -223,6 +223,25 @@
   <div class="stock-card" id="{{ p.ticker }}">
     <h3>{{ loop.index }}. {{ p.ticker }} — {{ p.name }} <span class="muted">({{ p.exchange }}, {{ p.currency }})</span></h3>
     <p class="muted">Sector: {{ p.sector }} · As-of {{ p.as_of }} {% if p.data_error %} · <strong>Data warning:</strong> {{ p.data_error }}{% endif %}</p>
+
+    <h4>0. Business overview <span class="badge badge-opinion">Opinion</span></h4>
+    <p>{{ p.business.summary }}</p>
+    <div class="grid-2">
+      <div>
+        <p class="muted" style="margin-bottom:4px;"><strong>Business units</strong></p>
+        <ul style="margin-top:0;">
+          {% for bu in p.business.business_units %}<li>{{ bu }}</li>{% endfor %}
+        </ul>
+      </div>
+      <div>
+        <p class="muted" style="margin-bottom:4px;"><strong>Customers</strong></p>
+        <p>{{ p.business.customers }}</p>
+      </div>
+    </div>
+    <p class="muted" style="margin-bottom:4px;"><strong>Key business risks</strong></p>
+    <ul>
+      {% for r in p.business.key_risks %}<li>{{ r }}</li>{% endfor %}
+    </ul>
 
     <div class="grid-2">
       <div>
@@ -471,8 +490,10 @@
       <li>Price targets are estimates built on disclosed, simplified methodologies (peer multiples; single-stage
           DCF with a constant growth/discount rate) — they are not guarantees, and small changes in the growth or
           discount-rate assumptions materially move the output.</li>
-      <li>Moat/competitive-advantage assessments are qualitative analyst opinion grounded in publicly known
-          business characteristics, not derived from the live data pull.</li>
+      <li>Moat/competitive-advantage assessments and the "Business overview" (segments, customers, key risks) are
+          qualitative analyst opinion grounded in publicly known business characteristics, not derived from the
+          live data pull; they are compiled only for names that have appeared in the selected top 10, not the full
+          50-name universe.</li>
       <li>Entry zones and stop-losses are derived mechanically from recent price history (50-day moving average,
           14-day ATR) — they are not predictions and do not account for upcoming earnings/news catalysts.</li>
       <li>Fee, FX-shock, and fractional-share assumptions are illustrative; confirm actual costs and fractional-share

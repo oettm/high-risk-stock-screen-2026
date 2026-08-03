@@ -65,6 +65,7 @@ to avoid Yahoo Finance rate limits.
 | Risk rating (1-10) | Weighted percentile of beta, 1y realized volatility, leverage, non-EUR currency exposure | Estimate |
 | Entry zone / stop-loss | 50-day moving average pullback band; stop = entry − 2×14-day ATR | Fact-derived |
 | Moat / competitive advantage | Qualitative write-up (`screener/qualitative.py`) | **Opinion**, not from runtime data |
+| Business overview | Business units, customers, key business risks (`screener/business_profile.py`), covers only names that have appeared in the selected top 10 | **Opinion**, not from runtime data |
 | Position sizing | Conviction-weighted (top 6 "core", remaining 4 "satellite"), fractional shares assumed, EUR 1/trade fee assumption disclosed | Estimate |
 | Backtest | Trailing 3y, FX-adjusted, buy-and-hold EUR value of the current basket at its conviction weights, vs. S&P 500 and STOXX Europe 600 | Fact-derived, **hindsight-biased by construction** (see caveat below) |
 | 5 forward scenarios | Bull/Base/Bear (peer multiples + DCF), Rate shock (+200bps), FX headwind (EUR +15%) - each a disclosed formula, no probabilities assigned | Estimate |
@@ -97,6 +98,7 @@ screener/
   backtest.py               trailing 3y, FX-adjusted backtest vs. S&P 500 / STOXX 600
   scenarios.py              5 forward-looking 12-month scenarios (bull/base/bear/rate/FX)
   qualitative.py            moat write-ups (OPINION, not runtime data)
+  business_profile.py       business units / customers / key risks per selected stock (OPINION, not runtime data)
   charts.py                 Plotly figure builders
   report.py                 Jinja2 context builder + HTML renderer
   templates/report_template.html
