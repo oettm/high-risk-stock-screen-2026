@@ -6,6 +6,8 @@ from __future__ import annotations
 
 import plotly.graph_objects as go
 
+from screener.config import SECTOR_SEMIS, SECTOR_ENERGY_INFRA, SECTOR_AI, SECTOR_DEFENCE, SECTOR_CONSUMER
+
 TEMPLATE = "plotly_white"
 
 # Validated palette (see dataviz skill references/palette.md) - light-mode steps,
@@ -15,12 +17,18 @@ BLUE = "#2a78d6"
 ORANGE = "#eb6834"
 STATUS_GOOD = "#0ca30c"
 STATUS_CRITICAL = "#d03b3b"
+
+# Fixed categorical order (validator-checked: adjacent-pair CVD/normal-vision all
+# PASS in this exact sequence). Sector order is pinned - not data-dependent - so
+# a pie chart only ever puts validated-adjacent colors next to each other; the
+# WARN-band contrast on aqua/yellow/magenta is offset by always-visible wedge labels.
+SECTOR_ORDER = [SECTOR_SEMIS, SECTOR_ENERGY_INFRA, SECTOR_AI, SECTOR_DEFENCE, SECTOR_CONSUMER]
 SECTOR_COLORS = {
-    "Semiconductors": "#2a78d6",
-    "Energy & Digital Infrastructure": "#eb6834",
-    "AI / Enterprise Software": "#1baf7a",
-    "Defence": "#eda100",
-    "Consumer Goods": "#e87ba4",
+    SECTOR_SEMIS: "#2a78d6",
+    SECTOR_ENERGY_INFRA: "#eb6834",
+    SECTOR_AI: "#1baf7a",
+    SECTOR_DEFENCE: "#eda100",
+    SECTOR_CONSUMER: "#e87ba4",
 }
 
 
@@ -66,13 +74,18 @@ def composite_score_chart(tickers: list[str], scores: list[float]) -> str:
 
 
 def allocation_pie_chart(sector_totals_pct: dict[str, float]) -> str:
-    labels = list(sector_totals_pct.keys())
-    values = list(sector_totals_pct.values())
+    # Render in the fixed canonical sector order (not input/data order) so only
+    # validator-checked adjacent color pairs ever end up touching on the wheel.
+    labels = [s for s in SECTOR_ORDER if s in sector_totals_pct]
+    values = [sector_totals_pct[s] for s in labels]
     colors = [SECTOR_COLORS.get(label, "#9e9e9e") for label in labels]
-    fig = go.Figure(go.Pie(labels=labels, values=values, hole=0.4, marker=dict(colors=colors)))
+    fig = go.Figure(go.Pie(
+        labels=labels, values=values, hole=0.4, marker=dict(colors=colors),
+        textinfo="label+percent", textposition="outside",
+    ))
     fig.update_layout(
-        template=TEMPLATE, height=360, margin=dict(l=10, r=10, t=30, b=10),
-        title="Sector allocation (% of investable capital)",
+        template=TEMPLATE, height=400, margin=dict(l=10, r=10, t=30, b=10),
+        title="Sector allocation (% of investable capital)", showlegend=False,
     )
     return fig.to_html(full_html=False, include_plotlyjs=False)
 
@@ -111,22 +124,29 @@ def backtest_chart(dates: list[str], portfolio_values: list[float], benchmarks: 
     return fig.to_html(full_html=False, include_plotlyjs=False)
 
 
+# Validator-checked in this exact order (SCENARIO_KEYS' fixed sequence): worst
+# adjacent pair (violet<->red) clears CVD normal-vision by a wide margin. Bull/bear
+# keep the intuitive status green/red; the middle three use categorical hues rather
+# than reusing status "warning"/"serious" (those two read too close to each other).
 SCENARIO_COLORS = {
     "bull": STATUS_GOOD,
     "base": BLUE,
     "bear": STATUS_CRITICAL,
-    "rate_shock": "#fab219",
-    "fx_headwind": "#ec835a",
+    "rate_shock": "#4a3aa7",
+    "fx_headwind": "#eda100",
 }
 
 
 def scenario_chart(scenario_keys: list[str], labels: list[str], ending_values: list[float], current_value: float) -> str:
     colors = [SCENARIO_COLORS.get(k, "#9e9e9e") for k in scenario_keys]
-    fig = go.Figure(go.Bar(x=labels, y=ending_values, marker_color=colors))
+    fig = go.Figure(go.Bar(
+        x=labels, y=ending_values, marker_color=colors,
+        text=[f"€{v:,.0f}" for v in ending_values], textposition="outside",
+    ))
     fig.add_hline(y=current_value, line_dash="dash", line_color="#52514e",
                   annotation_text="Capital invested today", annotation_position="top left")
     fig.update_layout(
-        template=TEMPLATE, height=360, margin=dict(l=50, r=10, t=30, b=80),
+        template=TEMPLATE, height=380, margin=dict(l=50, r=10, t=40, b=80),
         title="Portfolio value in 12 months, by scenario (EUR)",
         yaxis_title="EUR",
     )
