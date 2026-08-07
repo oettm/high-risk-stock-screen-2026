@@ -315,16 +315,13 @@
           <p>Bull: <strong>{{ "%.2f"|format(p.price_targets.multiples.bull_price) }} {{ p.currency }}</strong> &nbsp;|&nbsp;
              Bear: <strong>{{ "%.2f"|format(p.price_targets.multiples.bear_price) }} {{ p.currency }}</strong></p>
         {% endif %}
-        <p class="muted">Method B — simplified DCF: {{ p.price_targets.dcf.projection_years }}y FCF projection at
-          {{ "%.1f%%"|format(p.price_targets.dcf.bull_growth_assumption * 100) if p.price_targets.dcf.bull_growth_assumption is defined else "N/A" }} (bull) /
-          {{ "%.1f%%"|format(p.price_targets.dcf.bear_growth_assumption * 100) if p.price_targets.dcf.bear_growth_assumption is defined else "N/A" }} (bear) growth,
-          {{ "%.1f%%"|format(p.price_targets.dcf.discount_rate * 100) if p.price_targets.dcf.discount_rate is defined else "N/A" }} discount rate,
-          {{ "%.1f%%"|format(p.price_targets.dcf.terminal_growth * 100) if p.price_targets.dcf.terminal_growth is defined else "N/A" }} terminal growth.</p>
-        {% if p.price_targets.dcf.warning %}
-          <p class="muted">{{ p.price_targets.dcf.warning }}</p>
+        <p class="muted">Method B — PEG: bull/bear peer PEG ratio ({{ p.price_targets.peg.bull_peg_used }} / {{ p.price_targets.peg.bear_peg_used }}, from {{ p.price_targets.peg.peer_n }} in-sector peers)
+          × forward EPS growth ({{ "%.1f%%"|format(p.price_targets.peg.forward_growth_used * 100) if p.price_targets.peg.forward_growth_used is not none else "N/A" }}) × forward EPS. PEG normalizes the multiple for growth, unlike Method A.</p>
+        {% if p.price_targets.peg.warning %}
+          <p class="muted">{{ p.price_targets.peg.warning }}</p>
         {% else %}
-          <p>Bull: <strong>{{ "%.2f"|format(p.price_targets.dcf.bull_price) }} {{ p.currency }}</strong> &nbsp;|&nbsp;
-             Bear: <strong>{{ "%.2f"|format(p.price_targets.dcf.bear_price) }} {{ p.currency }}</strong></p>
+          <p>Bull: <strong>{{ "%.2f"|format(p.price_targets.peg.bull_price) }} {{ p.currency }}</strong> &nbsp;|&nbsp;
+             Bear: <strong>{{ "%.2f"|format(p.price_targets.peg.bear_price) }} {{ p.currency }}</strong></p>
         {% endif %}
 
         <h4>Risk rating <span class="badge badge-estimate">Estimate</span></h4>
@@ -446,9 +443,15 @@
     </table>
     </div>
     <p class="muted">
-      "Base" uses each stock's own forward EPS growth rate (or a 6% fallback if unavailable) with no
-      change in multiple. "Rate shock" reprices the DCF bull cash-flow path at +200bps. "FX headwind" applies the base
+      "Base" uses each stock's own forward EPS growth rate (capped at ±40% - see below - or a 6% fallback if unavailable) with no
+      change in multiple. "Rate shock" de-rates the PEG-method bull multiple down to the sector peer median PEG. "FX headwind" applies the base
       case in local currency but converts at a EUR-appreciates-15% FX rate.
+    </p>
+    <p class="muted">
+      <strong>Growth-rate cap:</strong> forward EPS growth (forward EPS ÷ trailing EPS − 1) is capped at ±40% wherever
+      it's used (composite score, PEG price targets, Base/FX-headwind scenarios). Trailing (ttm GAAP) EPS is often
+      distorted by one-off charges - M&amp;A amortization, stock-based comp, impairments - which can make the raw
+      ratio explode into a number unrelated to the business's real growth.
     </p>
   </div>
 
@@ -458,8 +461,10 @@
       <li>Data is pulled from Yahoo Finance via <code>yfinance</code> at run time; any gap is flagged as "N/A", never invented.</li>
       <li>The valuation benchmark (sector peer median forward P/E) and risk-rating percentiles are computed against
           the same 50-name curated universe used in the main screener, not a third-party index.</li>
-      <li>Price targets are estimates built on disclosed, simplified methodologies (peer multiples; single-stage
-          DCF with a constant growth/discount rate) — small changes in assumptions materially move the output.</li>
+      <li>Price targets are estimates built on two disclosed, peer-relative methodologies (forward P/E percentile;
+          PEG-ratio percentile) — both relative-value, not intrinsic-value, methods. A prior version used a DCF
+          instead of PEG; dropped for its terminal-value sensitivity producing misleading results on richly-valued,
+          debt-carrying names - see the main report's limitations for the full rationale.</li>
       <li>The <strong>Sharpe ratio</strong> uses the US 13-week T-bill yield (^IRX) as its risk-free proxy - a live,
           free, no-key series, but not a precise match for a EUR-based investor. Treat it as directionally
           informative, not a precision instrument.</li>

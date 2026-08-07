@@ -24,6 +24,7 @@ from screener.config import (
     TARGET_PORTFOLIO_SIZE,
     RISK_WEIGHTS,
 )
+from screener.metrics import forward_eps_growth
 
 
 def eur_value(native_value: float | None, currency: str, fx_rates: dict) -> float | None:
@@ -82,10 +83,7 @@ def _percentile_ranks(values: dict[str, float | None], higher_is_better: bool = 
 def compute_composite_scores(passed_metrics: dict[str, dict], instruments: dict[str, Instrument]) -> dict[str, dict]:
     growth_vals = {t: m["revenue"]["cagr"] for t, m in passed_metrics.items()}
 
-    fwd_growth_vals = {}
-    for t, m in passed_metrics.items():
-        fe, te = m.get("forward_eps"), m.get("trailing_eps")
-        fwd_growth_vals[t] = (fe / te - 1) if (fe and te and te > 0) else None
+    fwd_growth_vals = {t: forward_eps_growth(m)["growth"] for t, m in passed_metrics.items()}
 
     leverage_vals = {}
     for t, m in passed_metrics.items():
@@ -105,6 +103,15 @@ def compute_composite_scores(passed_metrics: dict[str, dict], instruments: dict[
     fwd_growth_pct = _percentile_ranks(fwd_growth_vals, higher_is_better=True)
     leverage_pct = _percentile_ranks(leverage_vals, higher_is_better=False)
 
+    # peer PEG (forward P/E / forward EPS growth%) per sector, for the PEG-based
+    # price-target method - only meaningful for peers with positive forward growth
+    peg_vals: dict[str, float] = {}
+    for t, m in passed_metrics.items():
+        fwd_pe = m.get("forward_pe")
+        fwd_g = fwd_growth_vals.get(t)
+        if fwd_pe and fwd_pe > 0 and fwd_g and fwd_g > 0:
+            peg_vals[t] = fwd_pe / (fwd_g * 100)
+
     scores = {}
     for t in passed_metrics:
         components = {
@@ -114,11 +121,14 @@ def compute_composite_scores(passed_metrics: dict[str, dict], instruments: dict[
             "leverage": leverage_pct[t],
         }
         composite = sum(components[k] * SCORE_WEIGHTS[k] for k in SCORE_WEIGHTS)
-        scores[t] = {"components": components, "composite": composite,
-                      "peer_forward_pe_sector": [
-                          passed_metrics[p].get("forward_pe") for p in by_sector[passed_metrics[t]["sector"]]
-                          if passed_metrics[p].get("forward_pe")
-                      ]}
+        sector_peers = by_sector[passed_metrics[t]["sector"]]
+        scores[t] = {
+            "components": components, "composite": composite,
+            "peer_forward_pe_sector": [
+                passed_metrics[p].get("forward_pe") for p in sector_peers if passed_metrics[p].get("forward_pe")
+            ],
+            "peer_peg_sector": [peg_vals[p] for p in sector_peers if p in peg_vals],
+        }
     return scores
 
 

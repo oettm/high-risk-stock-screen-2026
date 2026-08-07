@@ -22,12 +22,31 @@ from screener.config import (
     ATR_STOP_MULTIPLE,
     MOVING_AVERAGE_WINDOW,
     MIN_REVENUE_HISTORY_YEARS,
+    FORWARD_GROWTH_CAP,
 )
 from screener.fetch import RawStock
 
 
 def _pence_scale(instrument: Instrument) -> float:
     return 100.0 if instrument.pence_quoted else 1.0
+
+
+def forward_eps_growth(metrics_like: dict) -> dict:
+    """Capped forward EPS growth = forward_eps/trailing_eps - 1, clipped to
+    +/-FORWARD_GROWTH_CAP. Raw trailing (ttm GAAP) EPS is frequently distorted
+    by one-off charges (M&A amortization, stock-based comp, impairments),
+    which can make the raw forward/trailing ratio explode into a growth
+    figure that has nothing to do with the business's real trajectory. Used
+    consistently by the composite score, PEG valuation, and the Base/FX-
+    headwind scenarios so the same safeguard applies everywhere, and any
+    capping is disclosed via `is_capped` rather than silently hidden."""
+    fe = metrics_like.get("forward_eps")
+    te = metrics_like.get("trailing_eps")
+    if not fe or not te or te <= 0:
+        return {"growth": None, "raw_growth": None, "is_capped": False}
+    raw = fe / te - 1
+    capped = max(min(raw, FORWARD_GROWTH_CAP), -FORWARD_GROWTH_CAP)
+    return {"growth": capped, "raw_growth": raw, "is_capped": abs(capped - raw) > 1e-9}
 
 
 def current_price(raw: RawStock) -> float | None:

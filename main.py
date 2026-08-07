@@ -91,9 +91,9 @@ def main() -> None:
     selected = select_top_n(scores, instruments)
     print(f"  Selected: {selected}")
 
-    print("Computing price targets (multiples + simplified DCF) for selected names...")
+    print("Computing price targets (multiples + PEG) for selected names...")
     price_targets = {
-        t: build_price_targets(raw[t], passed[t], scores[t]["peer_forward_pe_sector"])
+        t: build_price_targets(passed[t], scores[t]["peer_forward_pe_sector"], scores[t]["peer_peg_sector"])
         for t in selected
     }
 
@@ -105,7 +105,7 @@ def main() -> None:
 
     print("Building 5-scenario forward-looking analysis...")
     scenario_analysis = build_scenario_analysis(
-        selected, raw, passed, price_targets, instruments, fx_rates, allocation
+        selected, passed, price_targets, instruments, fx_rates, allocation
     )
 
     # --- selected picks snapshot for audit/reproducibility ---

@@ -294,16 +294,13 @@
           <p>Bull: <strong>{{ "%.2f"|format(p.price_targets.multiples.bull_price) }} {{ p.currency }}</strong> &nbsp;|&nbsp;
              Bear: <strong>{{ "%.2f"|format(p.price_targets.multiples.bear_price) }} {{ p.currency }}</strong></p>
         {% endif %}
-        <p class="muted">Method B — simplified DCF: {{ p.price_targets.dcf.projection_years }}y FCF projection at
-          {{ "%.1f%%"|format(p.price_targets.dcf.bull_growth_assumption * 100) if p.price_targets.dcf.bull_growth_assumption is defined else "N/A" }} (bull) /
-          {{ "%.1f%%"|format(p.price_targets.dcf.bear_growth_assumption * 100) if p.price_targets.dcf.bear_growth_assumption is defined else "N/A" }} (bear) growth,
-          {{ "%.1f%%"|format(p.price_targets.dcf.discount_rate * 100) if p.price_targets.dcf.discount_rate is defined else "N/A" }} discount rate,
-          {{ "%.1f%%"|format(p.price_targets.dcf.terminal_growth * 100) if p.price_targets.dcf.terminal_growth is defined else "N/A" }} terminal growth.</p>
-        {% if p.price_targets.dcf.warning %}
-          <p class="muted">{{ p.price_targets.dcf.warning }}</p>
+        <p class="muted">Method B — PEG: bull/bear peer PEG ratio ({{ p.price_targets.peg.bull_peg_used }} / {{ p.price_targets.peg.bear_peg_used }}, from {{ p.price_targets.peg.peer_n }} in-sector peers)
+          × forward EPS growth ({{ "%.1f%%"|format(p.price_targets.peg.forward_growth_used * 100) if p.price_targets.peg.forward_growth_used is not none else "N/A" }}) × forward EPS. PEG normalizes the multiple for growth, unlike Method A.</p>
+        {% if p.price_targets.peg.warning %}
+          <p class="muted">{{ p.price_targets.peg.warning }}</p>
         {% else %}
-          <p>Bull: <strong>{{ "%.2f"|format(p.price_targets.dcf.bull_price) }} {{ p.currency }}</strong> &nbsp;|&nbsp;
-             Bear: <strong>{{ "%.2f"|format(p.price_targets.dcf.bear_price) }} {{ p.currency }}</strong></p>
+          <p>Bull: <strong>{{ "%.2f"|format(p.price_targets.peg.bull_price) }} {{ p.currency }}</strong> &nbsp;|&nbsp;
+             Bear: <strong>{{ "%.2f"|format(p.price_targets.peg.bear_price) }} {{ p.currency }}</strong></p>
         {% endif %}
 
         <h4>8. Risk rating <span class="badge badge-estimate">Estimate</span></h4>
@@ -474,9 +471,17 @@
     </table>
     </div>
     <p class="muted">
-      "Base" uses each stock's own forward EPS growth rate (or a {{ "%.0f%%"|format(6) }} fallback if unavailable) with no
-      change in multiple. "Rate shock" reprices the DCF bull cash-flow path at +200bps. "FX headwind" applies the base
+      "Base" uses each stock's own forward EPS growth rate (capped at ±40% - see below - or a {{ "%.0f%%"|format(6) }} fallback if unavailable) with no
+      change in multiple. "Rate shock" de-rates the PEG-method bull multiple down to the sector peer median PEG. "FX headwind" applies the base
       case in local currency but converts at a EUR-appreciates-15% FX rate.
+    </p>
+    <p class="muted">
+      <strong>Growth-rate cap:</strong> forward EPS growth (forward EPS ÷ trailing EPS − 1) is capped at ±40% wherever
+      it's used (composite score, PEG price targets, Base/FX-headwind scenarios). Trailing (ttm GAAP) EPS is often
+      distorted by one-off charges - M&amp;A amortization, stock-based comp, impairments - which can make the raw
+      ratio explode into a number unrelated to the business's real growth (e.g. a name with acquisition-related
+      amortization depressing its trailing EPS can show 200%+ "growth" that is really just a low base, not
+      performance).
     </p>
   </div>
 
@@ -488,9 +493,13 @@
           invented.</li>
       <li>The valuation benchmark is an in-house peer median from the curated universe in this repo, not a
           professional third-party index (e.g. no Bloomberg/FactSet/Damodaran subscription was used).</li>
-      <li>Price targets are estimates built on disclosed, simplified methodologies (peer multiples; single-stage
-          DCF with a constant growth/discount rate) — they are not guarantees, and small changes in the growth or
-          discount-rate assumptions materially move the output.</li>
+      <li>Price targets are estimates built on two disclosed, simplified, peer-relative methodologies (forward P/E
+          percentile; PEG-ratio percentile) — they are not guarantees, and are only as good as the peer group and the
+          consensus forward estimates they're anchored to. Both methods are relative-value, not intrinsic-value:
+          if an entire peer group is overvalued, both methods will say so too. A prior version used a discounted
+          cash-flow (DCF) method instead of PEG; it was dropped because its terminal value is highly sensitive to
+          the (small) gap between the discount rate and the terminal growth rate, which produced misleading "bull
+          case below current price" results for richly-valued, debt-carrying names.</li>
       <li>Moat/competitive-advantage assessments and the "Business overview" (segments, customers, key risks) are
           qualitative analyst opinion grounded in publicly known business characteristics, not derived from the
           live data pull; they are compiled only for names that have appeared in the selected top 10, not the full
@@ -503,9 +512,9 @@
           hindsight/look-ahead bias (the names were chosen because their historical growth/valuation looked good) and
           is not evidence the screening method would have selected these same names in the past, nor a guarantee of
           future results.</li>
-      <li>The <strong>5 forward scenarios</strong> are mechanical, formula-driven projections (peer multiples, a
-          single-stage DCF, a fixed discount-rate/FX shock size), not probability-weighted forecasts; no probability
-          is assigned to any scenario, and real outcomes will differ from all five.</li>
+      <li>The <strong>5 forward scenarios</strong> are mechanical, formula-driven projections (peer forward-P/E and
+          PEG percentiles, a fixed FX shock size), not probability-weighted forecasts; no probability is assigned to
+          any scenario, and real outcomes will differ from all five.</li>
       <li><strong>This is educational research, not personalised financial advice.</strong> It does not account for
           your full financial situation, tax treatment, or any positions you already hold. Final investment
           decisions — including whether to invest at all — are yours alone.</li>

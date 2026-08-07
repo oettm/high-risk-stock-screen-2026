@@ -77,9 +77,9 @@ def main() -> None:
     scores = compute_composite_scores(passed, instruments)
     risk_ratings = compute_risk_ratings(passed)
 
-    print("Computing price targets (multiples + simplified DCF) for the 8 custom names...")
+    print("Computing price targets (multiples + PEG) for the 8 custom names...")
     price_targets = {
-        t: build_price_targets(raw[t], passed[t], scores[t]["peer_forward_pe_sector"])
+        t: build_price_targets(passed[t], scores[t]["peer_forward_pe_sector"], scores[t]["peer_peg_sector"])
         for t in CUSTOM_TICKERS
     }
 
@@ -96,7 +96,7 @@ def main() -> None:
 
     print("Building 5-scenario forward-looking analysis...")
     scenario_analysis = build_scenario_analysis(
-        CUSTOM_TICKERS, raw, passed, price_targets, instruments, fx_rates, allocation
+        CUSTOM_TICKERS, passed, price_targets, instruments, fx_rates, allocation
     )
 
     DATA_DIR.mkdir(exist_ok=True)

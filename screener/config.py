@@ -132,18 +132,26 @@ assert abs(sum(SCORE_WEIGHTS.values()) - 1.0) < 1e-9
 MAX_PICKS_PER_SECTOR = 3   # diversification cap
 TARGET_PORTFOLIO_SIZE = 10
 
+# Cap on |forward EPS growth| (forward_eps/trailing_eps - 1) used anywhere in
+# the pipeline (composite score, PEG valuation, Base/FX-headwind scenarios).
+# Trailing (ttm GAAP) EPS is frequently distorted by one-off charges - M&A
+# amortization, stock-based comp, impairments - which can make the raw
+# forward/trailing ratio explode into a number with nothing to do with the
+# business's real growth (e.g. AVGO's VMware-amortization-depressed trailing
+# EPS produced a raw 221% "growth" figure). Capping avoids feeding that
+# distortion into scoring or valuation - see metrics.forward_eps_growth().
+FORWARD_GROWTH_CAP = 0.40
+
 # ---------------------------------------------------------------------------
 # Valuation assumptions (ESTIMATE, disclosed - not fact)
 # ---------------------------------------------------------------------------
-DCF_TERMINAL_GROWTH = 0.025          # 2.5% perpetual growth
-DCF_BASE_DISCOUNT_RATE = 0.09        # 9% for lower-beta names
-DCF_HIGH_BETA_DISCOUNT_RATE = 0.12   # 12% for beta > DCF_HIGH_BETA_THRESHOLD
-DCF_HIGH_BETA_THRESHOLD = 1.3
-DCF_PROJECTION_YEARS = 5
-DCF_BEAR_GROWTH_HAIRCUT = 0.5        # bear case uses 50% of historical CAGR
-
-# Multiples-method bull/bear percentiles taken from each stock's own in-universe
-# sector peer group forward P/E distribution.
+# Method A (multiples) and Method B (PEG) both use the same bull/bear
+# percentiles, taken from each stock's own in-universe sector peer
+# distribution (forward P/E for multiples, forward P/E / forward growth% for
+# PEG). A prior version used a simplified DCF as Method B; replaced (2026)
+# because its terminal-value sensitivity to the discount-rate/terminal-growth
+# spread produced counter-intuitive results for richly-priced, debt-carrying
+# names - see valuation.py's module docstring for the full rationale.
 MULTIPLES_BULL_PERCENTILE = 0.75
 MULTIPLES_BEAR_PERCENTILE = 0.25
 
@@ -190,6 +198,8 @@ RISK_FREE_TICKER = "^IRX"  # US 13-week T-bill yield, used as the Sharpe-ratio r
 # ---------------------------------------------------------------------------
 # Forward-looking scenario analysis (12-month, disclosed methodology per scenario)
 # ---------------------------------------------------------------------------
-SCENARIO_RATE_SHOCK_BPS = 0.02          # +200bps discount-rate shock, DCF bull-growth path
+# "Rate shock" de-rates from the bull-case elevated PEG multiple down to the
+# sector peer MEDIAN PEG - i.e. growth stops earning a premium multiple, a
+# standard effect of a broad risk-premium/rate shock on richly-valued names.
 SCENARIO_FX_SHOCK_PCT = 0.15            # EUR appreciates 15% vs USD/GBP/CHF
 SCENARIO_BASE_FALLBACK_GROWTH = 0.06    # used only if forward EPS growth is unavailable

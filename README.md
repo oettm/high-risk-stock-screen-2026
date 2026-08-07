@@ -74,14 +74,14 @@ to avoid Yahoo Finance rate limits.
 | Screening filters | Market cap floor, ≥4y revenue history, positive revenue | Fact-derived |
 | Composite score | Weighted percentile rank: revenue CAGR (35%), forward EPS growth (25%), in-sector valuation (20%), leverage (20%) | Estimate |
 | Selection | Top-ranked name per sector guaranteed, remaining slots filled by score, max 3/sector | Estimate |
-| Price targets | (A) peer forward-P/E bull/bear percentiles × forward EPS; (B) simplified single-stage DCF (beta-adjusted discount rate, capped growth, Gordon-growth terminal value) | Estimate |
+| Price targets | (A) peer forward-P/E bull/bear percentiles × forward EPS; (B) peer PEG-ratio bull/bear percentiles × forward EPS growth × forward EPS | Estimate |
 | Risk rating (1-10) | Weighted percentile of beta, 1y realized volatility, leverage, non-EUR currency exposure | Estimate |
 | Entry zone / stop-loss | 50-day moving average pullback band; stop = entry − 2×14-day ATR | Fact-derived |
 | Moat / competitive advantage | Qualitative write-up (`screener/qualitative.py`) | **Opinion**, not from runtime data |
 | Business overview | Business units, customers, key business risks (`screener/business_profile.py`), covers only names that have appeared in the selected top 10 | **Opinion**, not from runtime data |
 | Position sizing | Conviction-weighted (top 6 "core", remaining 4 "satellite"), fractional shares assumed, EUR 1/trade fee assumption disclosed | Estimate |
 | Backtest | Trailing 3y, FX-adjusted, buy-and-hold EUR value of the current basket at its conviction weights, vs. S&P 500 and STOXX Europe 600 | Fact-derived, **hindsight-biased by construction** (see caveat below) |
-| 5 forward scenarios | Bull/Base/Bear (peer multiples + DCF), Rate shock (+200bps), FX headwind (EUR +15%) - each a disclosed formula, no probabilities assigned | Estimate |
+| 5 forward scenarios | Bull/Base/Bear (peer multiples + PEG), Rate shock (PEG de-rates to sector peer median), FX headwind (EUR +15%) - each a disclosed formula, no probabilities assigned | Estimate |
 
 Full detail and every formula/assumption is shown inline in the report next to the
 numbers it produced.
@@ -93,9 +93,17 @@ numbers it produced.
   looked good, so of course the backtest looks strong. It describes how the current basket has recently behaved -
   it is **not** proof the screening method would have picked these same names 3 years ago, and it is **not** a
   forecast.
-- The **5 forward scenarios** are mechanical formulas (peer-multiple percentiles, a single-stage DCF, a fixed
-  +200bps rate shock, a fixed 15% FX shock), not probability-weighted forecasts. No likelihood is assigned to any
-  of the five, and actual outcomes will differ from all of them.
+- The **5 forward scenarios** are mechanical formulas (peer forward-P/E and PEG percentiles, a fixed 15% FX shock),
+  not probability-weighted forecasts. No likelihood is assigned to any of the five, and actual outcomes will differ
+  from all of them.
+- **Why PEG instead of a DCF for Method B**: an earlier version used a simplified discounted cash-flow model. It was
+  replaced because a DCF's terminal value is extremely sensitive to the (small) spread between the discount rate
+  and the terminal growth rate, which produced misleading "bull case below today's price" results for richly-valued,
+  debt-carrying names (e.g. Broadcom) even with every input correct - a real weakness of that method for this
+  use case, not a bug. PEG (Price/Earnings-to-Growth) avoids that specific sensitivity, is a standard growth-stock
+  valuation heuristic, and reuses the same in-universe peer-percentile pattern as Method A - but note it is still a
+  relative-value (peer-anchored) method, not an independent intrinsic-value check: if a stock's whole peer group is
+  overvalued, PEG will say so too.
 
 ## Repository layout
 
@@ -106,7 +114,7 @@ screener/
   config.py                 universe, thresholds, weights, valuation & FX assumptions
   fetch.py                  yfinance + FX pulls, retries, fallbacks
   metrics.py                growth CAGR, leverage, dividends, beta/volatility, ATR/entry-stop
-  valuation.py              multiples + simplified DCF bull/bear price targets
+  valuation.py              multiples + PEG bull/bear price targets
   scoring.py                screening filters, composite score, risk rating, top-10 selection
   sizing.py                 EUR 4,600 fractional-share allocation logic (systematic screen)
   custom_sizing.py          whole-share (no fractional) greedy allocation logic (custom portfolio)
@@ -128,9 +136,9 @@ requirements.txt
 
 - Yahoo Finance data can lag, be revised, or be temporarily unavailable for a given
   ticker; any such gap is shown as "N/A", never invented.
-- Price targets depend on disclosed, simplified assumptions (a single-stage DCF,
-  a capped growth rate, a fixed discount rate) — small changes in those assumptions
-  materially move the output. They are estimates, not guarantees.
+- Price targets depend on disclosed, peer-relative assumptions (forward P/E and PEG
+  percentiles from the in-house sector peer group) — they are not guarantees, and both
+  methods will overstate value if the whole peer group is overvalued.
 - The valuation benchmark is an in-house peer median, not a licensed third-party
   index.
 - Moat assessments are qualitative analyst opinion, not derived from the live data
