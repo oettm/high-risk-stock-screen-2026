@@ -37,7 +37,9 @@ BUSINESS_PROFILE: dict[str, dict] = {
         "business_units": ["IT Workflows", "Customer & Industry Workflows", "Employee Workflows", "Creator Workflows (platform/app dev)"],
         "customers": "Large enterprises across virtually every industry needing to automate internal workflows.",
         "key_risks": [
-            "Premium valuation leaves little room for growth disappointment",
+            "AI-agent disruption risk to the per-seat SaaS licensing model - the central driver of the stock's ~50% drawdown from its Jan-2025 high, sparked by fears (crystallized around Anthropic's Feb-2026 Claude Cowork launch, the market's 'SaaSpocalypse' moment) that AI agents could shrink the number of human seats software is priced on",
+            "Premium valuation (P/E ~60x+ even after the drawdown) leaves little room for any further growth disappointment",
+            "Guidance deceleration risk - even a beat-and-raise quarter has triggered double-digit single-day drops when forward growth guidance implies slowing subscription growth",
             "Competition from point solutions and Microsoft/SAP platform bundling",
             "Long enterprise sales and implementation cycles",
         ],
@@ -81,6 +83,28 @@ BUSINESS_PROFILE: dict[str, dict] = {
             "Customer concentration among a handful of large data-center builders",
             "Competition from Schneider Electric, Eaton",
             "Supply chain/component availability for rapidly scaling liquid-cooling demand",
+        ],
+    },
+    "MU": {
+        "summary": "Manufactures memory and storage chips (DRAM and NAND flash) used in servers, PCs, mobile devices, and increasingly AI accelerators (HBM).",
+        "business_units": ["Compute & Networking (DRAM for servers/PCs, HBM for AI)", "Mobile", "Storage (NAND/SSD)", "Embedded"],
+        "customers": "Server OEMs and hyperscalers, smartphone makers, PC OEMs, automotive/industrial customers.",
+        "key_risks": [
+            "Highly cyclical, commodity-like pricing for memory",
+            "Capital-intensive with large capex swings",
+            "Competition from Samsung and SK Hynix",
+            "China market-access restrictions",
+        ],
+    },
+    "PWR": {
+        "summary": "Largest specialty contractor building and maintaining electrical transmission, renewable energy, and telecom infrastructure in North America.",
+        "business_units": ["Electric Power", "Renewable Energy", "Underground Utility & Infrastructure", "Communications"],
+        "customers": "Utilities, renewable energy developers, telecom companies, government infrastructure programs.",
+        "key_risks": [
+            "Thin-margin, labor-intensive contracting model",
+            "Weather and permitting delays on large projects",
+            "Skilled-labor availability constraints",
+            "Project cost-overrun risk on fixed-price contracts",
         ],
     },
     "RHM.DE": {
