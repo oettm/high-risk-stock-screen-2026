@@ -38,6 +38,19 @@ This will:
    `universe_snapshot_<timestamp>.csv` (full raw pull) and
    `selected_10_<timestamp>.json` (final picks + every computed metric).
 
+## Custom portfolio (user-specified basket)
+
+`python custom_main.py` runs a second, independent analysis for a **hand-picked** basket
+instead of the systematic screener's own selection: NVDA, MSFT, VRT, TSM, AVGO, AMD,
+ASML.AS, OR.PA, EUR 7,000, equal-weight target. Unlike the main report, it respects a
+**whole-shares-only** constraint (no fractional shares) via a greedy proportional
+allocation algorithm (`screener/custom_sizing.py`), and adds portfolio-level annualized
+volatility and a **Sharpe ratio** (risk-free proxy: US 13-week T-bill yield, `^IRX`) to
+the backtest. Output: `docs/custom-portfolio.html`, cross-linked from the main report.
+It reuses the main screener's fundamentals/valuation/backtest/scenario pipeline and the
+same 50-name universe as the peer-benchmarking/risk-percentile population, for
+methodological consistency between the two reports.
+
 Runtime is a few minutes — the script deliberately pauses briefly between tickers
 to avoid Yahoo Finance rate limits.
 
@@ -87,23 +100,27 @@ numbers it produced.
 ## Repository layout
 
 ```
-main.py                     entry point - run this
+main.py                     entry point for the systematic 10-stock screen
+custom_main.py               entry point for the custom 8-stock, EUR 7,000, whole-share portfolio
 screener/
   config.py                 universe, thresholds, weights, valuation & FX assumptions
   fetch.py                  yfinance + FX pulls, retries, fallbacks
   metrics.py                growth CAGR, leverage, dividends, beta/volatility, ATR/entry-stop
   valuation.py              multiples + simplified DCF bull/bear price targets
   scoring.py                screening filters, composite score, risk rating, top-10 selection
-  sizing.py                 EUR 4,600 allocation logic
-  backtest.py               trailing 3y, FX-adjusted backtest vs. S&P 500 / STOXX 600
+  sizing.py                 EUR 4,600 fractional-share allocation logic (systematic screen)
+  custom_sizing.py          whole-share (no fractional) greedy allocation logic (custom portfolio)
+  backtest.py               trailing 3y, FX-adjusted backtest vs. S&P 500 / STOXX 600, incl. Sharpe ratio
   scenarios.py              5 forward-looking 12-month scenarios (bull/base/bear/rate/FX)
   qualitative.py            moat write-ups (OPINION, not runtime data)
-  business_profile.py       business units / customers / key risks per selected stock (OPINION, not runtime data)
+  business_profile.py       business units / customers / key risks per covered stock (OPINION, not runtime data)
   charts.py                 Plotly figure builders
-  report.py                 Jinja2 context builder + HTML renderer
-  templates/report_template.html
+  report.py                 Jinja2 context builder + HTML renderer (shared by both reports)
+  templates/report_template.html            systematic screen report
+  templates/custom_portfolio_template.html  custom portfolio report
 data/                       audit snapshots (raw universe pull + final picks), timestamped
-docs/index.html             the final report (served by GitHub Pages)
+docs/index.html             the systematic screen report (served by GitHub Pages)
+docs/custom-portfolio.html  the custom portfolio report (served by GitHub Pages)
 requirements.txt
 ```
 

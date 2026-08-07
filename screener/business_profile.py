@@ -64,6 +64,48 @@ BUSINESS_PROFILE: dict[str, dict] = {
             "Apple customer concentration in the wireless segment",
         ],
     },
+    "AMD": {
+        "summary": "Designs CPUs, GPUs, and adaptive/embedded chips (via the Xilinx acquisition), competing across data center, client PC, gaming and embedded markets.",
+        "business_units": ["Data Center (EPYC CPUs, Instinct GPUs)", "Client (Ryzen CPUs)", "Gaming (Radeon GPUs, semi-custom console chips)", "Embedded (Xilinx FPGAs)"],
+        "customers": "Cloud/hyperscale data centers, PC OEMs, game console makers (Sony, Microsoft), industrial/embedded customers.",
+        "key_risks": [
+            "Smaller AI-accelerator market share than NVIDIA, whose CUDA software moat limits share gains",
+            "Reliant on TSMC for manufacturing - no in-house fabs",
+            "Console-cycle dependency for semi-custom revenue",
+            "Intense pricing competition with Intel in CPUs",
+        ],
+    },
+    "MSFT": {
+        "summary": "Diversified technology company - enterprise software and cloud infrastructure (Azure), productivity software (Office/Microsoft 365), and gaming (Xbox), with a large OpenAI partnership powering its Copilot AI products.",
+        "business_units": ["Productivity and Business Processes (Office, LinkedIn, Dynamics)", "Intelligent Cloud (Azure, server products)", "More Personal Computing (Windows, Xbox, Surface, search advertising)"],
+        "customers": "Enterprises of all sizes (Office/Azure), consumers (Windows, Xbox, consumer subscriptions), developers.",
+        "key_risks": [
+            "Heavy AI infrastructure capex pressuring near-term margins",
+            "Same AI-agent/per-seat-licensing disruption risk facing the whole enterprise-software sector (see NOW) - Microsoft is also a major per-seat SaaS vendor via Office/365",
+            "Antitrust/regulatory scrutiny of AI and cloud practices",
+            "Execution risk in monetizing generative AI products (Copilot) at scale",
+        ],
+    },
+    "ASML.AS": {
+        "summary": "Sole global manufacturer of extreme ultraviolet (EUV) lithography machines, the critical tool for producing the most advanced semiconductor chips - a genuine technology monopoly at the leading edge.",
+        "business_units": ["EUV lithography systems", "DUV lithography systems", "Installed base management/service"],
+        "customers": "TSMC, Samsung, Intel, and other leading-edge chipmakers - a highly concentrated customer base of roughly 3-5 large fabs.",
+        "key_risks": [
+            "Extreme customer concentration - a handful of fabs buy nearly all machines",
+            "China export restrictions removing a growing revenue pool",
+            "Long lead-time, highly cyclical order book tied to fab capex cycles",
+        ],
+    },
+    "OR.PA": {
+        "summary": "World's largest cosmetics group, selling across mass, luxury, professional and dermatological/active-cosmetics brand tiers (L'Oreal Paris, Lancome, Vichy, La Roche-Posay).",
+        "business_units": ["Consumer Products", "L'Oreal Luxe", "Dermatological Beauty", "Professional Products"],
+        "customers": "Mass retailers, department/specialty beauty stores, pharmacies (dermo-cosmetics), salons (professional products), and e-commerce/DTC.",
+        "key_risks": [
+            "China beauty-market slowdown has weighed on the Luxe division",
+            "Intensifying competition from indie/DTC beauty brands online",
+            "Currency exposure across a global retail footprint",
+        ],
+    },
     "TSM": {
         "summary": "World's largest dedicated semiconductor foundry, manufacturing chips designed by other companies (fabless model) at leading-edge process nodes.",
         "business_units": ["Foundry services by node (3nm/5nm/7nm advanced nodes, mature nodes)", "Advanced packaging (CoWoS)"],

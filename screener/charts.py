@@ -105,6 +105,24 @@ def allocation_bar_chart(rows: list[dict]) -> str:
     return fig.to_html(full_html=False, include_plotlyjs=False)
 
 
+def custom_allocation_bar_chart(rows: list[dict]) -> str:
+    """Whole-share allocation chart: bar height = EUR deployed, label = share count."""
+    colors = [BLUE if r["shares"] > 0 else STATUS_CRITICAL for r in rows]
+    fig = go.Figure(go.Bar(
+        x=[r["ticker"] for r in rows],
+        y=[r["eur_amount"] for r in rows],
+        marker_color=colors,
+        text=[f"{r['shares']} sh" if r["shares"] > 0 else "none" for r in rows],
+        textposition="outside",
+    ))
+    fig.update_layout(
+        template=TEMPLATE, height=340, margin=dict(l=40, r=10, t=40, b=30),
+        title="EUR deployed per position (label = whole shares bought)",
+        yaxis_title="EUR",
+    )
+    return fig.to_html(full_html=False, include_plotlyjs=False)
+
+
 # Categorical slots 1-3 (blue/orange/aqua) - validated for 3-series all-pairs use.
 BACKTEST_SERIES_COLORS = ["#2a78d6", "#eb6834", "#1baf7a"]
 

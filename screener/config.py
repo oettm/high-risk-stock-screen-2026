@@ -185,6 +185,7 @@ BACKTEST_BENCHMARKS = {
     "^GSPC": {"name": "S&P 500", "currency": "USD"},
     "^STOXX": {"name": "STOXX Europe 600", "currency": "EUR"},
 }
+RISK_FREE_TICKER = "^IRX"  # US 13-week T-bill yield, used as the Sharpe-ratio risk-free proxy
 
 # ---------------------------------------------------------------------------
 # Forward-looking scenario analysis (12-month, disclosed methodology per scenario)

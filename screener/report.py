@@ -92,12 +92,12 @@ def build_pick_context(
     }
 
 
-def render_report(context: dict, out_path: Path) -> None:
+def render_report(context: dict, out_path: Path, template_name: str = "report_template.html") -> None:
     env = jinja2.Environment(
         loader=jinja2.FileSystemLoader(str(TEMPLATE_DIR)),
         autoescape=jinja2.select_autoescape(["html"]),
     )
-    template = env.get_template("report_template.html")
+    template = env.get_template(template_name)
     html = template.render(**context)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(html, encoding="utf-8")

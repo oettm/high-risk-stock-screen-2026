@@ -20,7 +20,22 @@ import numpy as np
 import pandas as pd
 import yfinance as yf
 
-from screener.config import Instrument, BACKTEST_PERIOD, BACKTEST_BENCHMARKS
+from screener.config import Instrument, BACKTEST_PERIOD, BACKTEST_BENCHMARKS, RISK_FREE_TICKER
+
+
+def fetch_risk_free_rate() -> dict:
+    """Live proxy for the risk-free rate used in Sharpe ratios: US 13-week
+    T-bill yield (^IRX). Not a perfect match for a EUR investor (no free,
+    no-key EUR short-rate series on Yahoo), but it's live, free, and a
+    reasonable proxy given the portfolio is majority USD-denominated -
+    disclosed as such in the report."""
+    try:
+        hist = yf.Ticker(RISK_FREE_TICKER).history(period="5d")
+        if hist is not None and not hist.empty:
+            return {"rate": float(hist["Close"].iloc[-1]) / 100.0, "source": f"Yahoo Finance ({RISK_FREE_TICKER}, US 13-week T-bill yield)"}
+    except Exception:  # noqa: BLE001
+        pass
+    return {"rate": None, "source": "unavailable"}
 
 
 def _native_close_series(ticker: str, instrument: Instrument, period: str) -> pd.Series | None:
@@ -56,18 +71,20 @@ def _max_drawdown(values: pd.Series) -> float:
     return float(drawdown.min())
 
 
-def _series_metrics(values: pd.Series) -> dict:
+def _series_metrics(values: pd.Series, risk_free_rate: float | None) -> dict:
     total_return = values.iloc[-1] / values.iloc[0] - 1
     n_days = (values.index[-1] - values.index[0]).days
     years = max(n_days / 365.25, 1 / 365.25)
     cagr = (values.iloc[-1] / values.iloc[0]) ** (1 / years) - 1
     daily_rets = values.pct_change().dropna()
     ann_vol = float(daily_rets.std() * math.sqrt(252))
+    sharpe = ((cagr - risk_free_rate) / ann_vol) if (risk_free_rate is not None and ann_vol > 0) else None
     return {
         "total_return_pct": float(total_return),
         "cagr_pct": float(cagr),
         "annualized_volatility_pct": ann_vol,
         "max_drawdown_pct": _max_drawdown(values),
+        "sharpe_ratio": sharpe,
         "start_date": values.index[0].strftime("%Y-%m-%d"),
         "end_date": values.index[-1].strftime("%Y-%m-%d"),
     }
@@ -131,6 +148,8 @@ def run_backtest(
     shares = {t: (investable * w) / panel[t].iloc[0] for t, w in active_weights.items()}
     portfolio_value = sum(shares[t] * panel[t] for t in panel.columns)
 
+    rf = fetch_risk_free_rate()
+
     result = {
         "start_date": panel.index[0].strftime("%Y-%m-%d"),
         "end_date": panel.index[-1].strftime("%Y-%m-%d"),
@@ -139,7 +158,8 @@ def run_backtest(
         "excluded_tickers": [t for t in selected if t not in panel.columns],
         "dates": [d.strftime("%Y-%m-%d") for d in panel.index],
         "portfolio_values": portfolio_value.tolist(),
-        "portfolio_metrics": _series_metrics(portfolio_value),
+        "portfolio_metrics": _series_metrics(portfolio_value, rf["rate"]),
+        "risk_free_rate": rf,
         "benchmarks": {},
     }
 
@@ -168,7 +188,7 @@ def run_backtest(
         result["benchmarks"][bm_ticker] = {
             "name": bm_meta["name"],
             "values": bm_value.tolist(),
-            "metrics": _series_metrics(bm_value),
+            "metrics": _series_metrics(bm_value, rf["rate"]),
         }
 
     return result
