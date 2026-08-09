@@ -1,17 +1,19 @@
 #!/usr/bin/env python3
 """
-Custom 8-stock portfolio analysis for a user-specified basket (not the
-systematic screener's own top-10 selection): NVDA, MSFT, VRT, TSM, AVGO,
-AMD, ASML.AS, OR.PA - EUR 7,000 budget, equal-weight target, WHOLE SHARES
-ONLY (no fractional shares).
+Custom 7-stock portfolio analysis for a second user-specified basket: MSFT,
+NVDA, TSM, VRT, NOW, CRWV, IREN - EUR 5,000 budget, equal-weight target,
+WHOLE SHARES ONLY (no fractional shares), same constraint as the EUR 7,000
+basket in custom_main.py.
 
-Run: python custom_main.py
-Output: docs/custom-portfolio.html
+CRWV (CoreWeave) and IREN (IREN Limited) are not in the curated 50-name
+UNIVERSE (config.py) - both are added here as extra Instrument entries,
+bucketed into an existing sector (AI / Enterprise Software for CRWV, Energy &
+Digital Infrastructure for IREN) so they get a real in-universe peer group
+for multiples/PEG valuation and risk-rating percentiles, instead of a
+1-name "peer group" of just themselves.
 
-Reuses the same live-data pipeline as main.py (yfinance + FX), the same
-disclosed valuation/scenario/backtest methodology, but with an integer-share
-position-sizing algorithm instead of the fractional-share conviction-weighted
-one used for the systematic screen.
+Run: python custom_main_5k.py
+Output: docs/custom-portfolio-5k.html
 """
 
 from __future__ import annotations
@@ -20,7 +22,7 @@ import datetime as dt
 import json
 from pathlib import Path
 
-from screener.config import UNIVERSE
+from screener.config import UNIVERSE, Instrument, SECTOR_AI, SECTOR_ENERGY_INFRA
 
 from screener.fetch import fetch_universe, fetch_all_fx
 from screener.metrics import compute_all_metrics
@@ -36,34 +38,40 @@ ROOT = Path(__file__).parent
 DATA_DIR = ROOT / "data"
 DOCS_DIR = ROOT / "docs"
 
-CUSTOM_TICKERS = ["NVDA", "MSFT", "VRT", "TSM", "AVGO", "AMD", "ASML.AS", "OR.PA"]
-CUSTOM_CAPITAL_EUR = 7000.0
+CUSTOM_TICKERS = ["MSFT", "NVDA", "TSM", "VRT", "NOW", "CRWV", "IREN"]
+CUSTOM_CAPITAL_EUR = 5000.0
 CUSTOM_TARGET_WEIGHTS = {t: 1.0 / len(CUSTOM_TICKERS) for t in CUSTOM_TICKERS}
+
+EXTRA_INSTRUMENTS = [
+    Instrument("CRWV", "CoreWeave, Inc.", SECTOR_AI, "NASDAQ", "USD"),
+    Instrument("IREN", "IREN Limited", SECTOR_ENERGY_INFRA, "NASDAQ", "USD"),
+]
 
 
 def main() -> None:
     run_started = dt.datetime.now(dt.timezone.utc)
     as_of_tag = run_started.strftime("%Y%m%d_%H%M")
-    print(f"[{run_started.isoformat(timespec='seconds')}] Starting custom-portfolio run...")
+    print(f"[{run_started.isoformat(timespec='seconds')}] Starting custom-portfolio (5k) run...")
     print(f"Tickers: {CUSTOM_TICKERS}, capital EUR {CUSTOM_CAPITAL_EUR:,.0f}, equal-weight target, whole shares only")
 
-    instruments = {i.ticker: i for i in UNIVERSE}
-    currencies = {i.currency for i in UNIVERSE}
+    full_universe = list(UNIVERSE) + EXTRA_INSTRUMENTS
+    instruments = {i.ticker: i for i in full_universe}
+    currencies = {i.currency for i in full_universe}
 
     missing = [t for t in CUSTOM_TICKERS if t not in instruments]
     if missing:
-        raise SystemExit(f"Unknown ticker(s) not in the curated universe: {missing}")
+        raise SystemExit(f"Unknown ticker(s): {missing}")
 
     print(f"Fetching FX rates for {sorted(currencies)}...")
     fx_rates = fetch_all_fx(currencies)
     for ccy, info in fx_rates.items():
         print(f"  {ccy} -> EUR: {info['rate']} (source: {info['source']})")
 
-    # Fetch the FULL 50-name universe (not just the 8) so sector peer medians /
-    # percentile-based risk ratings rest on the same robust population used by
-    # the main screener - consistent methodology, not an ad-hoc 8-name peer set.
-    print(f"Fetching data for {len(UNIVERSE)} universe tickers (peer benchmarking population)...")
-    raw = fetch_universe(UNIVERSE)
+    # Fetch the full 50-name universe PLUS CRWV/IREN so sector peer medians /
+    # percentile-based risk ratings rest on a real population, not a 1-name
+    # "peer group" of just themselves - same pattern as custom_main.py.
+    print(f"Fetching data for {len(full_universe)} tickers (peer benchmarking population)...")
+    raw = fetch_universe(full_universe)
     all_metrics = {t: compute_all_metrics(r) for t, r in raw.items()}
 
     passed, rejected = apply_screen(all_metrics, instruments, fx_rates)
@@ -71,13 +79,13 @@ def main() -> None:
 
     for t in CUSTOM_TICKERS:
         if t not in passed:
-            print(f"  WARNING: {t} did not pass the standard screen (data issue?) - using raw metrics anyway")
+            print(f"  WARNING: {t} did not pass the standard screen ({rejected.get(t)}) - using raw metrics anyway")
             passed[t] = all_metrics[t]
 
     scores = compute_composite_scores(passed, instruments)
     risk_ratings = compute_risk_ratings(passed)
 
-    print("Computing price targets (multiples + PEG) for the 8 custom names...")
+    print("Computing price targets (multiples + PEG) for the 7 custom names...")
     price_targets = {
         t: build_price_targets(passed[t], scores[t]["peer_forward_pe_sector"], scores[t]["peer_peg_sector"])
         for t in CUSTOM_TICKERS
@@ -104,7 +112,7 @@ def main() -> None:
         "tickers": CUSTOM_TICKERS, "capital_eur": CUSTOM_CAPITAL_EUR,
         "allocation": allocation, "backtest": backtest, "scenario_analysis": scenario_analysis,
     }
-    dump_path = DATA_DIR / f"custom_portfolio_{as_of_tag}.json"
+    dump_path = DATA_DIR / f"custom_portfolio_5k_{as_of_tag}.json"
     dump_path.write_text(json.dumps(dump, indent=2, default=str), encoding="utf-8")
     print(f"Data snapshot saved to {dump_path}")
 
@@ -150,11 +158,11 @@ def main() -> None:
         "scenario_analysis": scenario_analysis,
         "scenario_keys": SCENARIO_KEYS,
         "scenario_chart": scenario_chart_html,
-        "sibling_report_link": "custom-portfolio-5k.html",
-        "sibling_report_label": "Custom portfolio (EUR 5,000)",
+        "sibling_report_link": "custom-portfolio.html",
+        "sibling_report_label": "Custom portfolio (EUR 7,000)",
     }
 
-    out_path = DOCS_DIR / "custom-portfolio.html"
+    out_path = DOCS_DIR / "custom-portfolio-5k.html"
     render_report(context, out_path, template_name="custom_portfolio_template.html")
     print(f"Report written to {out_path}")
     print("Done.")

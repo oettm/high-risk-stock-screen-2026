@@ -51,6 +51,16 @@ It reuses the main screener's fundamentals/valuation/backtest/scenario pipeline 
 same 50-name universe as the peer-benchmarking/risk-percentile population, for
 methodological consistency between the two reports.
 
+A second custom basket, `python custom_main_5k.py`, runs the same analysis for MSFT,
+NVDA, TSM, VRT, NOW, CRWV (CoreWeave), IREN (IREN Limited) at EUR 5,000. CRWV and IREN
+aren't in the curated 50-name universe, so they're added as extra `Instrument` entries
+bucketed into an existing sector (AI / Enterprise Software and Energy & Digital
+Infrastructure respectively) purely so they get a real in-universe peer group for
+valuation/risk percentiles - see the top of `custom_main_5k.py`. Both are pre-profit on
+a forward-EPS basis, so their Method A/B price targets correctly show "insufficient
+data" rather than a number. Output: `docs/custom-portfolio-5k.html`, cross-linked with
+both other reports.
+
 Runtime is a few minutes — the script deliberately pauses briefly between tickers
 to avoid Yahoo Finance rate limits.
 
@@ -110,6 +120,7 @@ numbers it produced.
 ```
 main.py                     entry point for the systematic 10-stock screen
 custom_main.py               entry point for the custom 8-stock, EUR 7,000, whole-share portfolio
+custom_main_5k.py             entry point for the custom 7-stock, EUR 5,000, whole-share portfolio
 screener/
   config.py                 universe, thresholds, weights, valuation & FX assumptions
   fetch.py                  yfinance + FX pulls, retries, fallbacks
@@ -128,7 +139,8 @@ screener/
   templates/custom_portfolio_template.html  custom portfolio report
 data/                       audit snapshots (raw universe pull + final picks), timestamped
 docs/index.html             the systematic screen report (served by GitHub Pages)
-docs/custom-portfolio.html  the custom portfolio report (served by GitHub Pages)
+docs/custom-portfolio.html  the EUR 7,000 custom portfolio report (served by GitHub Pages)
+docs/custom-portfolio-5k.html  the EUR 5,000 custom portfolio report (served by GitHub Pages)
 requirements.txt
 ```
 

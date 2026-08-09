@@ -11,6 +11,29 @@ report falls back to "N/A" rather than inventing a profile.
 """
 
 BUSINESS_PROFILE: dict[str, dict] = {
+    "CRWV": {
+        "summary": "Hyperscale cloud provider purpose-built for AI - rents out large-scale GPU-accelerated compute clusters for training and running AI models, rather than general-purpose cloud (AWS/Azure/GCP style).",
+        "business_units": ["GPU Cloud Compute (training)", "GPU Cloud Compute (inference)", "AI-optimized data-center infrastructure"],
+        "customers": "AI labs and large enterprises running frontier-scale AI training/inference workloads; heavily concentrated around a small number of very large contracts (Microsoft has been a large customer).",
+        "key_risks": [
+            "Extreme customer concentration - a handful of contracts represent a large share of revenue",
+            "Heavy debt-funded capex to build out data centers ahead of contracted demand",
+            "Dependent on NVIDIA GPU allocation and pricing",
+            "Newly public (2025 IPO) with a short track record and limited financial history",
+            "Hyperscalers (Microsoft, Google, Amazon) building competing in-house AI cloud capacity",
+        ],
+    },
+    "IREN": {
+        "summary": "Formerly Iris Energy - started as a renewable-powered Bitcoin miner, now increasingly pivoting the same data-center/power infrastructure toward AI cloud (GPU) compute services.",
+        "business_units": ["Bitcoin Mining", "AI Cloud Services (GPU compute)", "Power/data-center infrastructure development"],
+        "customers": "Bitcoin network (mining rewards) for the legacy business; AI/enterprise customers renting GPU cloud capacity for the newer business line.",
+        "key_risks": [
+            "Bitcoin price volatility directly drives mining-segment economics",
+            "Execution risk pivoting a mining operator into an AI cloud compute provider - unproven at scale versus purpose-built AI cloud peers",
+            "Capital-intensive data-center buildout, competing for power and GPU allocation with better-capitalized players",
+            "Regulatory risk to crypto-mining operations in some jurisdictions",
+        ],
+    },
     "NVDA": {
         "summary": "Designs GPUs and full-stack AI compute systems (chips, networking, software) for data centers, gaming, and professional visualization.",
         "business_units": ["Data Center (AI/HPC GPUs, networking)", "Gaming (GeForce GPUs)", "Professional Visualization (RTX workstations)", "Automotive (self-driving compute platforms)", "OEM & Other"],

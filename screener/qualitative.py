@@ -8,6 +8,16 @@ judgment-based, because "moat durability" is not a number any API returns.
 """
 
 MOAT: dict[str, dict] = {
+    "CRWV": {
+        "source": "Early-mover scale in purpose-built AI-training cloud infrastructure, deep NVIDIA relationship (early/priority GPU access), and large multi-year contracts with anchor customers.",
+        "durability": "Low-medium",
+        "threats": "Hyperscalers (Microsoft, Google, Amazon, Meta) building competing in-house AI cloud capacity; thin differentiation versus other GPU-cloud specialists once supply constraints ease; heavy debt load raises refinancing/execution risk.",
+    },
+    "IREN": {
+        "source": "Low-cost renewable power access and data-center site control built up during its Bitcoin-mining phase, now being repurposed for AI/GPU cloud hosting.",
+        "durability": "Low",
+        "threats": "Unproven competitive position in AI cloud versus purpose-built players (CoreWeave, Nebius) and hyperscalers; Bitcoin-mining legacy business remains exposed to crypto-price cycles; execution risk on the pivot.",
+    },
     "NVDA": {
         "source": "CUDA software ecosystem lock-in, top-to-bottom AI compute stack (chips, networking via Mellanox/NVLink, software), and multi-generation lead in high-end AI accelerators.",
         "durability": "High, but narrowing",

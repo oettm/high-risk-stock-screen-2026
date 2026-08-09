@@ -136,6 +136,7 @@
     <a href="#scenarios">5 scenarios</a>
     <a href="#limitations">Limitations &amp; disclaimer</a>
     <a href="custom-portfolio.html">Custom 8-stock portfolio (EUR 7,000) &rarr;</a>
+    <a href="custom-portfolio-5k.html">Custom 7-stock portfolio (EUR 5,000) &rarr;</a>
   </nav>
 
   <h2 id="exec-summary">Executive summary</h2>
@@ -287,14 +288,14 @@
         <p><strong>Main threats:</strong> {{ p.moat.threats }}</p>
 
         <h4>7. 12-month price targets <span class="badge badge-estimate">Estimate</span></h4>
-        <p class="muted">Method A — multiples: bull/bear peer forward P/E ({{ p.price_targets.multiples.bull_pe_used }}x / {{ p.price_targets.multiples.bear_pe_used }}x, from {{ p.price_targets.multiples.peer_n }} in-sector peers) × forward EPS estimate.</p>
+        <p class="muted">Method A — multiples: bull/bear peer forward P/E ({{ "%.1f"|format(p.price_targets.multiples.bull_pe_used) if p.price_targets.multiples.bull_pe_used is not none else "N/A" }}x / {{ "%.1f"|format(p.price_targets.multiples.bear_pe_used) if p.price_targets.multiples.bear_pe_used is not none else "N/A" }}x, from {{ p.price_targets.multiples.peer_n }} in-sector peers) × forward EPS estimate.</p>
         {% if p.price_targets.multiples.warning %}
           <p class="muted">{{ p.price_targets.multiples.warning }}</p>
         {% else %}
           <p>Bull: <strong>{{ "%.2f"|format(p.price_targets.multiples.bull_price) }} {{ p.currency }}</strong> &nbsp;|&nbsp;
              Bear: <strong>{{ "%.2f"|format(p.price_targets.multiples.bear_price) }} {{ p.currency }}</strong></p>
         {% endif %}
-        <p class="muted">Method B — PEG: bull/bear peer PEG ratio ({{ p.price_targets.peg.bull_peg_used }} / {{ p.price_targets.peg.bear_peg_used }}, from {{ p.price_targets.peg.peer_n }} in-sector peers)
+        <p class="muted">Method B — PEG: bull/bear peer PEG ratio ({{ "%.2f"|format(p.price_targets.peg.bull_peg_used) if p.price_targets.peg.bull_peg_used is not none else "N/A" }} / {{ "%.2f"|format(p.price_targets.peg.bear_peg_used) if p.price_targets.peg.bear_peg_used is not none else "N/A" }}, from {{ p.price_targets.peg.peer_n }} in-sector peers)
           × forward EPS growth ({{ "%.1f%%"|format(p.price_targets.peg.forward_growth_used * 100) if p.price_targets.peg.forward_growth_used is not none else "N/A" }}) × forward EPS. PEG normalizes the multiple for growth, unlike Method A.</p>
         {% if p.price_targets.peg.warning %}
           <p class="muted">{{ p.price_targets.peg.warning }}</p>
