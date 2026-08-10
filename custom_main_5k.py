@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-Custom 7-stock portfolio analysis for a second user-specified basket: MSFT,
-NVDA, TSM, VRT, NOW, CRWV, IREN - EUR 5,000 budget, equal-weight target,
-WHOLE SHARES ONLY (no fractional shares), same constraint as the EUR 7,000
-basket in custom_main.py.
+Custom 9-stock portfolio analysis for a second user-specified basket: MSFT,
+NVDA, TSM, VRT, NOW, CRWV, IREN, SAN.PA, JNJ.DE - EUR 5,000 budget,
+equal-weight target, WHOLE SHARES ONLY (no fractional shares), same
+constraint as the EUR 7,000 basket in custom_main.py.
 
 CRWV (CoreWeave) and IREN (IREN Limited) are not in the curated 50-name
 UNIVERSE (config.py) - both are added here as extra Instrument entries,
@@ -11,6 +11,21 @@ bucketed into an existing sector (AI / Enterprise Software for CRWV, Energy &
 Digital Infrastructure for IREN) so they get a real in-universe peer group
 for multiples/PEG valuation and risk-rating percentiles, instead of a
 1-name "peer group" of just themselves.
+
+SAN.PA (Sanofi) and JNJ.DE were added after a live low-beta/low-volatility
+screen against a healthcare candidate shortlist, explicitly to reduce this
+basket's very high average beta/volatility (the original 7 names run
+0.9-4.3 beta) and its 100%-USD currency concentration - both are EUR-
+denominated. JNJ.DE is the Xetra EUR cross-listing of Johnson & Johnson
+(same company as NYSE: JNJ, chosen instead of the primary US listing
+specifically so the position is bought/held in EUR); note Yahoo Finance
+does not carry forward analyst EPS/PE estimates for this cross-listing (only
+the primary US listing has them), so JNJ.DE's Method A/B price targets
+correctly show "insufficient data" - a real data-coverage gap of the EUR
+listing, not a bug. Both are bucketed into Consumer Goods (SECTOR_CONSUMER)
+for peer-percentile purposes - the closest available in-universe peer group
+of large, low-beta, dividend-paying blue chips, not a claim that pharma
+literally is a consumer-goods sector.
 
 Run: python custom_main_5k.py
 Output: docs/custom-portfolio-5k.html
@@ -22,7 +37,7 @@ import datetime as dt
 import json
 from pathlib import Path
 
-from screener.config import UNIVERSE, Instrument, SECTOR_AI, SECTOR_ENERGY_INFRA
+from screener.config import UNIVERSE, Instrument, SECTOR_AI, SECTOR_ENERGY_INFRA, SECTOR_CONSUMER
 
 from screener.fetch import fetch_universe, fetch_all_fx
 from screener.metrics import compute_all_metrics
@@ -38,13 +53,15 @@ ROOT = Path(__file__).parent
 DATA_DIR = ROOT / "data"
 DOCS_DIR = ROOT / "docs"
 
-CUSTOM_TICKERS = ["MSFT", "NVDA", "TSM", "VRT", "NOW", "CRWV", "IREN"]
+CUSTOM_TICKERS = ["MSFT", "NVDA", "TSM", "VRT", "NOW", "CRWV", "IREN", "SAN.PA", "JNJ.DE"]
 CUSTOM_CAPITAL_EUR = 5000.0
 CUSTOM_TARGET_WEIGHTS = {t: 1.0 / len(CUSTOM_TICKERS) for t in CUSTOM_TICKERS}
 
 EXTRA_INSTRUMENTS = [
     Instrument("CRWV", "CoreWeave, Inc.", SECTOR_AI, "NASDAQ", "USD"),
     Instrument("IREN", "IREN Limited", SECTOR_ENERGY_INFRA, "NASDAQ", "USD"),
+    Instrument("SAN.PA", "Sanofi SA", SECTOR_CONSUMER, "Euronext Paris", "EUR"),
+    Instrument("JNJ.DE", "Johnson & Johnson (Xetra, EUR)", SECTOR_CONSUMER, "Xetra", "EUR"),
 ]
 
 
@@ -85,7 +102,7 @@ def main() -> None:
     scores = compute_composite_scores(passed, instruments)
     risk_ratings = compute_risk_ratings(passed)
 
-    print("Computing price targets (multiples + PEG) for the 7 custom names...")
+    print(f"Computing price targets (multiples + PEG) for the {len(CUSTOM_TICKERS)} custom names...")
     price_targets = {
         t: build_price_targets(passed[t], scores[t]["peer_forward_pe_sector"], scores[t]["peer_peg_sector"])
         for t in CUSTOM_TICKERS

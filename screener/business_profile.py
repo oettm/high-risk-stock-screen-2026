@@ -202,4 +202,26 @@ BUSINESS_PROFILE: dict[str, dict] = {
             "Emerging-market currency volatility",
         ],
     },
+    "SAN.PA": {
+        "summary": "French multinational pharmaceutical company with a diversified portfolio spanning specialty care (immunology, rare disease, neurology), vaccines, and general medicines, plus a large consumer-healthcare arm (Opella, majority-divested in 2025).",
+        "business_units": ["Specialty Care (immunology - Dupixent, rare disease, rare blood disorders, neurology)", "Vaccines", "General Medicines"],
+        "customers": "Hospitals, physicians and health systems globally; national health/reimbursement systems for pricing; consumers via OTC brands (legacy, pre-Opella divestiture).",
+        "key_risks": [
+            "Heavy reliance on a single blockbuster (Dupixent) for a large share of growth and profit",
+            "Patent-cliff exposure on older specialty-care and diabetes products",
+            "Drug-pricing/reimbursement political risk in the US and Europe",
+            "Vaccine-segment revenue is seasonal and can be volatile year to year",
+        ],
+    },
+    "JNJ.DE": {
+        "summary": "Johnson & Johnson - diversified healthcare group split into Innovative Medicine (pharmaceuticals across oncology, immunology, neuroscience) and MedTech (surgery, orthopaedics, vision, cardiovascular). Xetra-listed EUR line of the same US company (primary listing: NYSE ticker JNJ) - same business, EUR-denominated share class rather than a separate entity.",
+        "business_units": ["Innovative Medicine (oncology, immunology, neuroscience, pulmonary hypertension)", "MedTech (surgery, orthopaedics, vision care, cardiovascular/electrophysiology)"],
+        "customers": "Hospitals, physicians, health systems, and payers globally; consumers indirectly via prescribed/implanted products.",
+        "key_risks": [
+            "Ongoing talc-related litigation liability (legacy consumer-health product), still working through bankruptcy-channel settlement attempts",
+            "Patent-cliff exposure as individual blockbuster drugs lose exclusivity over time",
+            "Drug-pricing/reimbursement political risk in the US and Europe",
+            "MedTech segment is more cyclical/procedure-volume-dependent than pharma",
+        ],
+    },
 }

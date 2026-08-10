@@ -268,4 +268,14 @@ MOAT: dict[str, dict] = {
         "durability": "High",
         "threats": "China beauty-market slowdown; intensifying competition from indie/DTC beauty brands online.",
     },
+    "SAN.PA": {
+        "source": "Deep immunology/rare-disease R&D franchise anchored by Dupixent (co-marketed with Regeneron), global vaccines manufacturing scale, and a large regulatory/clinical-development organization built over decades.",
+        "durability": "Medium",
+        "threats": "Over-reliance on Dupixent for growth; upcoming patent expirations on older products; competitive biologics pipelines from Roche, Novartis, AbbVie in overlapping immunology indications.",
+    },
+    "JNJ.DE": {
+        "source": "Broad diversification across pharma (oncology, immunology, neuroscience) and MedTech (surgery, orthopaedics, vision), deep regulatory/manufacturing scale, and one of the largest R&D budgets in healthcare.",
+        "durability": "High",
+        "threats": "Talc litigation liability is a real, still-unresolved financial overhang; patent cliffs on individual drugs; MedTech competitive pressure from Medtronic, Stryker, Abbott.",
+    },
 }

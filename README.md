@@ -52,14 +52,29 @@ same 50-name universe as the peer-benchmarking/risk-percentile population, for
 methodological consistency between the two reports.
 
 A second custom basket, `python custom_main_5k.py`, runs the same analysis for MSFT,
-NVDA, TSM, VRT, NOW, CRWV (CoreWeave), IREN (IREN Limited) at EUR 5,000. CRWV and IREN
-aren't in the curated 50-name universe, so they're added as extra `Instrument` entries
-bucketed into an existing sector (AI / Enterprise Software and Energy & Digital
-Infrastructure respectively) purely so they get a real in-universe peer group for
-valuation/risk percentiles - see the top of `custom_main_5k.py`. Both are pre-profit on
-a forward-EPS basis, so their Method A/B price targets correctly show "insufficient
-data" rather than a number. Output: `docs/custom-portfolio-5k.html`, cross-linked with
-both other reports.
+NVDA, TSM, VRT, NOW, CRWV (CoreWeave), IREN (IREN Limited), SAN.PA (Sanofi), JNJ.DE
+(Johnson & Johnson, Xetra EUR listing) at EUR 5,000. CRWV and IREN aren't in the
+curated 50-name universe, so they're added as extra `Instrument` entries bucketed into
+an existing sector (AI / Enterprise Software and Energy & Digital Infrastructure
+respectively) purely so they get a real in-universe peer group for valuation/risk
+percentiles - see the top of `custom_main_5k.py`. Both are pre-profit on a forward-EPS
+basis, so their Method A/B price targets correctly show "insufficient data" rather than
+a number.
+
+SAN.PA and JNJ.DE were added after a live low-beta/low-volatility screen against a
+healthcare shortlist, specifically to reduce the basket's very high average beta/
+volatility and its 100%-USD currency concentration - both are EUR-denominated. JNJ.DE
+is the Xetra EUR cross-listing of Johnson & Johnson (same company as NYSE: JNJ, chosen
+so the position is bought/held in EUR); Yahoo Finance does not carry forward analyst
+EPS/PE estimates for this cross-listing, so JNJ.DE's Method A/B price targets show
+"insufficient data" - a real data-coverage gap of the EUR listing, not the negative-
+earnings case CRWV/IREN hit. Both are bucketed into Consumer Goods (`SECTOR_CONSUMER`)
+for peer-percentile purposes as the closest available in-universe group of large,
+low-beta, dividend-paying blue chips - not a claim that pharma is literally a
+consumer-goods sector; this makes SAN.PA's multiples/PEG bull case look more inflated
+than a genuine pharma-peer comparison would, since Consumer Staples names structurally
+trade at higher P/E than Big Pharma. Output: `docs/custom-portfolio-5k.html`,
+cross-linked with both other reports.
 
 Runtime is a few minutes — the script deliberately pauses briefly between tickers
 to avoid Yahoo Finance rate limits.
@@ -120,7 +135,7 @@ numbers it produced.
 ```
 main.py                     entry point for the systematic 10-stock screen
 custom_main.py               entry point for the custom 8-stock, EUR 7,000, whole-share portfolio
-custom_main_5k.py             entry point for the custom 7-stock, EUR 5,000, whole-share portfolio
+custom_main_5k.py             entry point for the custom 9-stock, EUR 5,000, whole-share portfolio
 screener/
   config.py                 universe, thresholds, weights, valuation & FX assumptions
   fetch.py                  yfinance + FX pulls, retries, fallbacks
