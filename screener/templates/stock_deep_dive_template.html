@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ ticker }} — Deep Dive — {{ generated_at }}</title>
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+<style>
+  :root {
+    color-scheme: light;
+    --surface-0: #ffffff;
+    --surface-1: #f7f7f5;
+    --surface-2: #eeeeeb;
+    --text-primary: #16160f;
+    --text-secondary: #52514e;
+    --text-muted: #83817a;
+    --border: #e0dfd9;
+    --blue: #2a78d6;
+    --orange: #eb6834;
+    --good: #0ca30c;
+    --critical: #d03b3b;
+    --badge-fact-bg: #e5f0fc; --badge-fact-fg: #184f95;
+    --badge-est-bg: #fdf1e0; --badge-est-fg: #a15c00;
+    --badge-op-bg: #f4eefb; --badge-op-fg: #4a3aa7;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) {
+      color-scheme: dark;
+      --surface-0: #171715; --surface-1: #1e1e1c; --surface-2: #262623;
+      --text-primary: #ffffff; --text-secondary: #c3c2b7; --text-muted: #8f8d84; --border: #35342f;
+      --badge-fact-bg: #16294a; --badge-fact-fg: #9ec5f4;
+      --badge-est-bg: #402c0a; --badge-est-fg: #f0b95a;
+      --badge-op-bg: #241a3d; --badge-op-fg: #b9aef5;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 0; background: var(--surface-1); color: var(--text-primary);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.5;
+  }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 24px 20px 80px; }
+  header.hero { background: linear-gradient(135deg, #184f95, #2a78d6); color: #fff; padding: 40px 20px; margin-bottom: 28px; }
+  header.hero .wrap { padding: 0; }
+  header.hero h1 { margin: 0 0 8px; font-size: 1.8rem; }
+  header.hero p { margin: 4px 0; opacity: 0.92; font-size: 0.95rem; }
+  h2 { font-size: 1.4rem; margin-top: 48px; border-bottom: 2px solid var(--border); padding-bottom: 8px; }
+  h3 { font-size: 1.15rem; margin-top: 28px; }
+  .card { background: var(--surface-0); border: 1px solid var(--border); border-radius: 10px; padding: 20px; margin: 16px 0; overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.88rem; }
+  th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--border); }
+  th { color: var(--text-secondary); font-weight: 600; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.03em; }
+  tr:hover td { background: var(--surface-1); }
+  .table-scroll { overflow-x: auto; }
+  .badge { display: inline-block; font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; padding: 2px 7px; border-radius: 5px; margin-left: 6px; vertical-align: middle; }
+  .badge-fact { background: var(--badge-fact-bg); color: var(--badge-fact-fg); }
+  .badge-estimate { background: var(--badge-est-bg); color: var(--badge-est-fg); }
+  .badge-opinion { background: var(--badge-op-bg); color: var(--badge-op-fg); }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 780px) { .grid-2 { grid-template-columns: 1fr; } }
+  .kv { display: grid; grid-template-columns: auto 1fr; gap: 4px 14px; font-size: 0.88rem; margin: 10px 0; }
+  .kv dt { color: var(--text-secondary); }
+  .kv dd { margin: 0; font-weight: 600; }
+  .muted { color: var(--text-muted); font-size: 0.85rem; }
+  .up { color: var(--good); } .down { color: var(--critical); }
+  .fee-note { background: var(--badge-est-bg); color: var(--badge-est-fg); padding: 14px 18px; border-radius: 8px; font-size: 0.9rem; }
+  footer { margin-top: 60px; padding-top: 20px; border-top: 1px solid var(--border); color: var(--text-muted); font-size: 0.8rem; }
+  .plotly-card { background: #fff; border-radius: 8px; padding: 8px; }
+  a { color: var(--blue); }
+  .toc { font-size: 0.9rem; }
+  .toc a { display: inline-block; margin-right: 14px; }
+  .status-active { color: var(--good); font-weight: 600; }
+  .status-failed { color: var(--critical); font-weight: 600; }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <h1>{{ name }} ({{ ticker }}) — Deep Dive</h1>
+    <p>{{ sector }} · {{ exchange }} · Report generato {{ generated_at }} · Dati live da Yahoo Finance (yfinance)</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <nav class="toc">
+    <a href="#business">Il business</a>
+    <a href="#decline">Perche' e' sceso</a>
+    <a href="#financials">Solidita' finanziaria</a>
+    <a href="#growth">Crescita e valutazione</a>
+    <a href="#pipeline">Pipeline / progetti</a>
+    <a href="#limitations">Limiti &amp; disclaimer</a>
+    <a href="index.html">Screening sistematico</a>
+    <a href="custom-portfolio-5k.html">Portafoglio EUR 5.000</a>
+    <a href="dashboard.html">Dashboard portafoglio reale</a>
+  </nav>
+
+  <div class="card">
+    <div class="kv">
+      <dt>Prezzo</dt><dd class="{{ 'up' if (day_change_pct or 0) >= 0 else 'down' }}">
+        {{ "%.2f"|format(price_native) if price_native is not none else "N/A" }} {{ currency }}
+        {% if day_change_pct is not none %}({{ "%+.2f"|format(day_change_pct) }}% oggi){% endif %}
+      </dd>
+      <dt>Beta</dt><dd>{{ "%.2f"|format(beta) if beta is not none else "N/A" }}</dd>
+      <dt>Volatilita' 1y</dt><dd>{{ "%.1f"|format(vol_1y*100) if vol_1y is not none else "N/A" }}%</dd>
+      <dt>P/E trailing / forward</dt><dd>{{ "%.1f"|format(trailing_pe) if trailing_pe is not none else "N/A" }}x / {{ "%.1f"|format(forward_pe) if forward_pe is not none else "N/A" }}x</dd>
+      <dt>As-of</dt><dd class="muted">{{ as_of }}</dd>
+    </div>
+  </div>
+
+  <h2 id="business">0. Il business <span class="badge badge-opinion">Opinion</span></h2>
+  <div class="card">
+    <p>{{ business.summary }}</p>
+    {% if business.business_units %}
+    <h3>Unita' di business</h3>
+    <ul>{% for u in business.business_units %}<li>{{ u }}</li>{% endfor %}</ul>
+    {% endif %}
+    <h3>Clienti</h3>
+    <p>{{ business.customers }}</p>
+    <h3>Principali rischi di business</h3>
+    <ul>{% for r in business.key_risks %}<li>{{ r }}</li>{% endfor %}</ul>
+    <h3>Moat / vantaggio competitivo</h3>
+    <p><strong>Fonte del moat:</strong> {{ moat.source }}</p>
+    <p><strong>Durabilita':</strong> {{ moat.durability }}</p>
+    <p><strong>Minacce:</strong> {{ moat.threats }}</p>
+  </div>
+
+  <h2 id="decline">1. Perche' il titolo e' sceso — storico 5 anni <span class="badge badge-fact">Fact</span></h2>
+  <p class="muted">Ogni annotazione sul grafico corrisponde a uno dei maggiori cali giornalieri degli ultimi 5 anni (identificati dai dati di prezzo reali), con causa verificata tramite ricerca — non e' una supposizione.</p>
+  <div class="card plotly-card">{{ decline_chart|safe }}</div>
+  <div class="table-scroll">
+  <table>
+    <thead><tr><th>Data</th><th>Variazione</th><th>Causa (verificata)</th></tr></thead>
+    <tbody>
+      {% for ev in decline_events %}
+      <tr><td>{{ ev.date }}</td><td class="down">{{ ev.label.split(":")[0] }}</td><td>{{ ev.label.split(":",1)[1].replace("\n"," ") if ":" in ev.label else ev.label }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  <p class="muted">Nota: i cali del 2022 (Zantac) e di aprile 2025 (dazi USA) sono eventi di settore, non specifici di Sanofi — colpirono anche GSK, Pfizer, Haleon e altri farmaceutici nello stesso periodo. I cali di settembre 2025 e luglio 2026 sono invece specifici del pipeline Sanofi.</p>
+
+  <h2 id="financials">2. Solidita' dei financial <span class="badge badge-fact">Fact</span></h2>
+  <div class="grid-2">
+    <div class="card">
+      <h3>Redditivita' &amp; margini</h3>
+      <div class="kv">
+        <dt>Fatturato (ttm)</dt><dd>{{ "%.2f"|format(financials.total_revenue/1e9) if financials.total_revenue else "N/A" }} {{ currency }} mld</dd>
+        <dt>Crescita fatturato</dt><dd>{{ "%+.1f"|format(financials.revenue_growth_pct*100) if financials.revenue_growth_pct is not none else "N/A" }}%</dd>
+        <dt>Margine lordo</dt><dd>{{ "%.1f"|format(financials.gross_margin_pct*100) if financials.gross_margin_pct is not none else "N/A" }}%</dd>
+        <dt>Margine operativo</dt><dd>{{ "%.1f"|format(financials.operating_margin_pct*100) if financials.operating_margin_pct is not none else "N/A" }}%</dd>
+        <dt>Margine netto</dt><dd>{{ "%.1f"|format(financials.profit_margin_pct*100) if financials.profit_margin_pct is not none else "N/A" }}%</dd>
+        <dt>Margine EBITDA</dt><dd>{{ "%.1f"|format(financials.ebitda_margin_pct*100) if financials.ebitda_margin_pct is not none else "N/A" }}%</dd>
+        <dt>ROE</dt><dd>{{ "%.1f"|format(financials.return_on_equity_pct*100) if financials.return_on_equity_pct is not none else "N/A" }}%</dd>
+      </div>
+      <p class="muted">Il margine netto e' compresso da oneri una-tantum (svalutazioni pipeline, vedi sezione Pipeline) — non riflette la redditivita' operativa sottostante, che e' molto piu' alta (margine operativo).</p>
+    </div>
+    <div class="card">
+      <h3>Solidita' patrimoniale &amp; liquidita'</h3>
+      <div class="kv">
+        <dt>Debito totale</dt><dd>{{ "%.2f"|format(financials.total_debt/1e9) if financials.total_debt else "N/A" }} {{ currency }} mld</dd>
+        <dt>Cassa totale</dt><dd>{{ "%.2f"|format(financials.total_cash/1e9) if financials.total_cash else "N/A" }} {{ currency }} mld</dd>
+        <dt>Debt/Equity</dt><dd>{{ "%.2f"|format(financials.debt_to_equity) if financials.debt_to_equity is not none else "N/A" }}</dd>
+        <dt>Current ratio</dt><dd>{{ "%.2f"|format(financials.current_ratio) if financials.current_ratio is not none else "N/A" }}</dd>
+        <dt>Quick ratio</dt><dd>{{ "%.2f"|format(financials.quick_ratio) if financials.quick_ratio is not none else "N/A" }}</dd>
+        <dt>Free cash flow (ttm)</dt><dd>{{ "%.2f"|format(financials.free_cashflow/1e9) if financials.free_cashflow else "N/A" }} {{ currency }} mld</dd>
+        <dt>Dividend yield</dt><dd>{{ "%.2f"|format(financials.dividend_yield_pct) if financials.dividend_yield_pct is not none else "N/A" }}%</dd>
+        <dt>Payout ratio (GAAP)</dt><dd>{{ "%.0f"|format(financials.payout_ratio_pct*100) if financials.payout_ratio_pct is not none else "N/A" }}%</dd>
+      </div>
+      <p class="muted">Quick ratio sotto 1.0 e payout ratio GAAP sopra 100% sembrano allarmanti isolatamente, ma entrambi sono distorti dallo stesso effetto: utile netto GAAP compresso da svalutazioni una-tantum. Su base free-cash-flow il dividendo resta coperto (FCF {{ "%.2f"|format(financials.free_cashflow/1e9) if financials.free_cashflow else "N/A" }} mld vs. dividendi pagati).</p>
+    </div>
+  </div>
+  <div class="card plotly-card">{{ revenue_chart|safe }}</div>
+
+  <h2 id="growth">3. Proiezioni di crescita &amp; valutazione <span class="badge badge-estimate">Estimate</span></h2>
+  <div class="card">
+    <h3>Crescita EPS forward (con correzione per distorsione da oneri una-tantum)</h3>
+    <div class="kv">
+      <dt>EPS trailing / forward</dt><dd>{{ "%.2f"|format(trailing_eps) if trailing_eps is not none else "N/A" }} / {{ "%.2f"|format(forward_eps) if forward_eps is not none else "N/A" }} {{ currency }}</dd>
+      <dt>Crescita grezza</dt><dd>{{ "%+.0f"|format(forward_growth.raw_growth*100) if forward_growth.raw_growth is not none else "N/A" }}%</dd>
+      <dt>Crescita usata (cappata &plusmn;40%)</dt><dd>{{ "%+.0f"|format(forward_growth.growth*100) if forward_growth.growth is not none else "N/A" }}%{% if forward_growth.is_capped %} <span class="muted">(cappata — il dato grezzo era distorto)</span>{% endif %}</dd>
+    </div>
+    <p class="muted">La crescita EPS forward grezza e' gonfiata dallo stesso effetto: EPS trailing depresso da svalutazioni una-tantum fa sembrare enorme il rimbalzo atteso. Il numero cappato e' quello usato nei target di valutazione sotto.</p>
+  </div>
+
+  <div class="card">
+    <h3>Target di prezzo — Metodo A (multipli) e B (PEG), vs. peer group farmaceutico reale</h3>
+    <p class="muted">A differenza dei report di portafoglio (dove Sanofi era stata inserita nel bucket "Consumer Goods" solo per avere un gruppo di confronto), qui il peer group e' un vero paniere Big Pharma: {{ peer_sample.rows|map(attribute='ticker')|join(", ") }}.</p>
+    <div class="card plotly-card">{{ peer_chart|safe }}</div>
+    <div class="kv">
+      <dt>Metodo A — bull / bear</dt>
+      <dd>
+        {% if price_targets.multiples.bull_price is not none %}
+          {{ "%.2f"|format(price_targets.multiples.bull_price) }} / {{ "%.2f"|format(price_targets.multiples.bear_price) }} {{ currency }}
+          (P/E usati: {{ "%.1f"|format(price_targets.multiples.bull_pe_used) }}x / {{ "%.1f"|format(price_targets.multiples.bear_pe_used) }}x, da {{ price_targets.multiples.peer_n }} peer)
+        {% else %}N/A — {{ price_targets.multiples.warning }}{% endif %}
+      </dd>
+      <dt>Metodo B (PEG) — bull / bear</dt>
+      <dd>
+        {% if price_targets.peg.bull_price is not none %}
+          {{ "%.2f"|format(price_targets.peg.bull_price) }} / {{ "%.2f"|format(price_targets.peg.bear_price) }} {{ currency }}
+          (PEG usati: {{ "%.2f"|format(price_targets.peg.bull_peg_used) }} / {{ "%.2f"|format(price_targets.peg.bear_peg_used) }}, da {{ price_targets.peg.peer_n }} peer)
+        {% else %}N/A — {{ price_targets.peg.warning }}{% endif %}
+      </dd>
+    </div>
+
+    <h3>Consenso analisti (Fact — dati aggregati Yahoo Finance)</h3>
+    <div class="kv">
+      <dt>Target medio / mediano</dt><dd>{{ "%.2f"|format(analyst.target_mean) if analyst.target_mean is not none else "N/A" }} / {{ "%.2f"|format(analyst.target_median) if analyst.target_median is not none else "N/A" }} {{ currency }}</dd>
+      <dt>Target max / min</dt><dd>{{ "%.2f"|format(analyst.target_high) if analyst.target_high is not none else "N/A" }} / {{ "%.2f"|format(analyst.target_low) if analyst.target_low is not none else "N/A" }} {{ currency }}</dd>
+      <dt>N. analisti</dt><dd>{{ analyst.n_analysts if analyst.n_analysts is not none else "N/A" }}</dd>
+      <dt>Rating consenso</dt><dd>{{ analyst.recommendation or "N/A" }} ({{ "%.2f"|format(analyst.recommendation_mean) if analyst.recommendation_mean is not none else "N/A" }}/5)</dd>
+    </div>
+    <p class="muted">Il peer-group reale qui usato produce target piu' credibili dei report di portafoglio, ma resta un metodo relativo (peer-anchored): se l'intero settore Big Pharma e' sotto-prezzato, questo metodo lo erediterebbe. Il consenso analisti (che incorpora giudizi azienda-specifici sul rischio di pipeline) resta il riferimento piu' solido tra i due.</p>
+  </div>
+
+  <h2 id="pipeline">4. Pipeline / progetti in sviluppo <span class="badge badge-opinion">Opinion</span></h2>
+  <p class="muted">Fonti: comunicati stampa Sanofi 2025-2026, presentazione "Year-end late-stage pipeline review", ricerca web mirata — non e' un elenco esaustivo di tutta la pipeline, solo dei programmi rilevanti per capire la traiettoria di crescita.</p>
+  <div class="table-scroll">
+  <table>
+    <thead><tr><th>Programma</th><th>Stato</th><th>Dettaglio</th></tr></thead>
+    <tbody>
+      {% for p in pipeline_projects %}
+      <tr>
+        <td>{{ p.name }}</td>
+        <td class="{{ 'status-active' if 'Attivo' in p.status else 'status-failed' }}">{{ p.status }}</td>
+        <td>{{ p.detail }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+
+  <h2 id="limitations">Limiti &amp; disclaimer</h2>
+  <div class="card">
+    <ul>
+      <li>Report di ricerca educativa, non consulenza finanziaria personalizzata. Le decisioni di investimento restano tue.</li>
+      <li>I target di prezzo (Metodo A/B) sono relativi al peer group scelto, non un valore intrinseco indipendente.</li>
+      <li>Le cause dei cali sono verificate tramite ricerca pubblica al momento della generazione del report, non garantite esaustive.</li>
+      <li>La sezione Pipeline riflette lo stato noto pubblicamente al momento della generazione — i programmi clinici cambiano stato frequentemente.</li>
+      <li>Dati mancanti da Yahoo Finance sono mostrati come "N/A", mai stimati.</li>
+    </ul>
+  </div>
+
+  <footer>
+    <p><span class="badge badge-fact">Fact</span> dati live da Yahoo Finance al momento della generazione &middot;
+       <span class="badge badge-estimate">Estimate</span> calcolo su assunzioni dichiarate &middot;
+       <span class="badge badge-opinion">Opinion</span> giudizio qualitativo, non dati real-time.</p>
+    <p><a href="index.html">Screening sistematico</a> &middot; <a href="custom-portfolio.html">Portafoglio EUR 7.000</a> &middot; <a href="custom-portfolio-5k.html">Portafoglio EUR 5.000</a> &middot; <a href="dashboard.html">Dashboard portafoglio reale</a></p>
+  </footer>
+
+</div>
+</body>
+</html>

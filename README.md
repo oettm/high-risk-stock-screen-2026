@@ -181,6 +181,33 @@ numbers it produced.
   relative-value (peer-anchored) method, not an independent intrinsic-value check: if a stock's whole peer group is
   overvalued, PEG will say so too.
 
+## Sanofi deep dive (single-stock research report)
+
+`python sanofi_deep_dive.py` builds a standalone report on Sanofi (SAN.PA) answering
+five things: what the business does, why the stock has declined (5-year price chart
+with the largest single-day moves annotated - each cause identified via web search on
+the actual date, not guessed, and disclosed as sector-wide vs. Sanofi-specific),
+financial solidity (margins, leverage, liquidity, FCF/dividend coverage), growth
+projections and valuation, and active pipeline programs. Output: `docs/sanofi-deep-dive.html`.
+
+Unlike the two portfolio reports (where Sanofi/SAN.PA is bucketed into "Consumer Goods"
+purely so it has *some* peer group for percentile valuation - a disclosed simplification
+that visibly inflates its bull-case target), this report benchmarks against a dedicated
+pharmaceutical peer group (`PEER_TICKERS` in `sanofi_deep_dive.py`: NVO, AZN, MRK, LLY,
+NOVN.SW, PFE, BMY, GSK, ABBV, JNJ), producing materially more credible Method A/B targets
+- still shown alongside live analyst consensus for comparison, with the gap between the
+two disclosed and explained rather than hidden.
+
+Architecture: `screener/stock_deep_dive.py` (context builder: financials, dedicated-peer
+valuation via the existing `valuation.build_price_targets()`, forward-growth calc) +
+`screener/charts.py`'s `decline_annotated_chart()` (5y price line with researched-cause
+annotations at each major move) and `peer_valuation_bar_chart()` + the driver script's
+own `DECLINE_EVENTS`/`PIPELINE_PROJECTS` lists (Opinion content, sourced via web search,
+not invented) + `screener/templates/stock_deep_dive_template.html` (reuses the same
+light-theme Fact/Estimate/Opinion system as the other 3 reports, and reuses the existing
+`BUSINESS_PROFILE`/`MOAT` entries for SAN.PA from the shared `screener/business_profile.py`
+/ `screener/qualitative.py` modules).
+
 ## Repository layout
 
 ```
@@ -188,6 +215,7 @@ main.py                     entry point for the systematic 10-stock screen
 custom_main.py               entry point for the custom 8-stock, EUR 7,000, whole-share portfolio
 custom_main_5k.py             entry point for the custom 9-stock, EUR 5,000, whole-share portfolio
 dashboard_main.py             entry point for the real-holdings dashboard (re-run weekly)
+sanofi_deep_dive.py            entry point for the standalone Sanofi single-stock report
 screener/
   config.py                 universe, thresholds, weights, valuation & FX assumptions
   fetch.py                  yfinance + FX pulls, retries, fallbacks
@@ -208,12 +236,14 @@ screener/
   templates/report_template.html            systematic screen report
   templates/custom_portfolio_template.html  custom portfolio reports (EUR 7k and 5k)
   templates/dashboard_template.html         real-holdings dashboard
+  templates/stock_deep_dive_template.html   single-stock deep-dive report (Sanofi)
 data/                       audit snapshots (raw universe pull + final picks), timestamped
 data/dashboard_history.json  weekly dashboard snapshots (kept, not timestamped-pruned - powers week-over-week deltas)
 docs/index.html             the systematic screen report (served by GitHub Pages)
 docs/custom-portfolio.html  the EUR 7,000 custom portfolio report (served by GitHub Pages)
 docs/custom-portfolio-5k.html  the EUR 5,000 custom portfolio report (served by GitHub Pages)
 docs/dashboard.html         the real-holdings dashboard, auto-refreshed weekly (served by GitHub Pages)
+docs/sanofi-deep-dive.html  the standalone Sanofi research report (served by GitHub Pages)
 .github/workflows/weekly-dashboard.yml  cron job that re-runs dashboard_main.py every Monday and commits the result
 requirements.txt
 ```

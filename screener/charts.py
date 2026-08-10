@@ -155,6 +155,39 @@ SCENARIO_COLORS = {
 }
 
 
+def decline_annotated_chart(ticker: str, dates: list[str], closes: list[float], currency: str, events: list[dict]) -> str:
+    """5y (or any range) price chart with researched, sourced annotations at the
+    dates of the largest single-day moves - used by single-stock deep-dive
+    reports to show WHERE a decline happened and label WHY, grounded in the
+    news search that identified each event, never a guessed cause."""
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=dates, y=closes, mode="lines", name="Close", line=dict(color=BLUE, width=1.6)))
+    for ev in events:
+        color = STATUS_CRITICAL if ev.get("direction", "down") == "down" else STATUS_GOOD
+        fig.add_vline(x=ev["date"], line_dash="dot", line_color=color, opacity=0.55)
+        fig.add_annotation(
+            x=ev["date"], y=ev["y"], text=ev["label"], showarrow=True, arrowhead=2, arrowcolor=color,
+            ax=0, ay=-55 if ev.get("direction", "down") == "down" else 55,
+            font=dict(size=10, color=color), bgcolor="rgba(255,255,255,0.92)", bordercolor=color, borderwidth=1,
+        )
+    fig.update_layout(
+        template=TEMPLATE, height=480, margin=dict(l=50, r=20, t=40, b=40),
+        title=f"{ticker} - storico prezzo con i principali cali annotati (causa ricercata, fonte citata nel report)",
+        yaxis_title=currency,
+    )
+    return fig.to_html(full_html=False, include_plotlyjs=False)
+
+
+def peer_valuation_bar_chart(peer_tickers: list[str], peer_forward_pes: list[float], current_price: float,
+                              bull_price: float | None, bear_price: float | None, currency: str) -> str:
+    fig = go.Figure(go.Bar(x=peer_tickers, y=peer_forward_pes, marker_color=BLUE, text=[f"{v:.1f}x" for v in peer_forward_pes], textposition="outside"))
+    fig.update_layout(
+        template=TEMPLATE, height=320, margin=dict(l=40, r=10, t=30, b=30),
+        title="Forward P/E: Sanofi vs. peer group farmaceutico", yaxis_title="Forward P/E",
+    )
+    return fig.to_html(full_html=False, include_plotlyjs=False)
+
+
 def scenario_chart(scenario_keys: list[str], labels: list[str], ending_values: list[float], current_value: float) -> str:
     colors = [SCENARIO_COLORS.get(k, "#9e9e9e") for k in scenario_keys]
     fig = go.Figure(go.Bar(
