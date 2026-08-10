@@ -212,6 +212,7 @@ def compute_all_metrics(raw: RawStock) -> dict:
         "ticker": raw.instrument.ticker,
         "as_of": raw.as_of,
         "price_native": price,
+        "day_change_pct": raw.info.get("regularMarketChangePercent"),
         "currency": raw.instrument.currency,
         "market_cap_native": raw.info.get("marketCap"),
         "trailing_pe": raw.info.get("trailingPE"),

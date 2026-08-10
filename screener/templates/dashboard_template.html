@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Portfolio Dashboard</title>
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+<style>
+  :root {
+    --bg: #0a0e14;
+    --card: #10151f;
+    --card-border: #1c2230;
+    --text-primary: #e8e6df;
+    --text-secondary: #9c9a90;
+    --text-muted: #6b6a63;
+    --amber: #f0b95a;
+    --cyan: #4fc3f7;
+    --good: #1baf7a;
+    --critical: #d03b3b;
+    --warning: #eda100;
+    --badge-fact-bg: #16294a; --badge-fact-fg: #9ec5f4;
+    --badge-est-bg: #402c0a; --badge-est-fg: #f0b95a;
+    --badge-op-bg: #241a3d; --badge-op-fg: #b9aef5;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text-primary);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    line-height: 1.5;
+  }
+  .num { font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
+  a { color: var(--cyan); }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 24px 20px 60px; }
+  header.topbar {
+    display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 8px;
+    border-bottom: 1px solid var(--card-border); padding-bottom: 14px; margin-bottom: 18px;
+  }
+  header.topbar h1 { font-size: 1.3rem; margin: 0; color: var(--amber); letter-spacing: 0.02em; }
+  header.topbar .meta { color: var(--text-muted); font-size: 0.8rem; }
+  nav.crosslinks { font-size: 0.82rem; margin-bottom: 20px; color: var(--text-secondary); }
+  nav.crosslinks a { margin-right: 14px; }
+
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; }
+  .badge-fact { background: var(--badge-fact-bg); color: var(--badge-fact-fg); }
+  .badge-estimate { background: var(--badge-est-bg); color: var(--badge-est-fg); }
+  .badge-opinion { background: var(--badge-op-bg); color: var(--badge-op-fg); }
+
+  .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 24px; }
+  .stat-card {
+    background: var(--card); border: 1px solid var(--card-border); border-radius: 8px; padding: 14px 16px;
+  }
+  .stat-card .label { font-size: 0.72rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 6px; }
+  .stat-card .value { font-size: 1.5rem; font-weight: 600; }
+  .stat-card .sub { font-size: 0.78rem; color: var(--text-muted); margin-top: 4px; }
+  .up { color: var(--good); } .down { color: var(--critical); } .flat { color: var(--text-secondary); }
+
+  h2 { font-size: 1.05rem; color: var(--text-primary); margin: 32px 0 12px; padding-bottom: 6px; border-bottom: 1px solid var(--card-border); }
+  h2 .badge { margin-left: 8px; vertical-align: middle; }
+
+  .suggestion-card {
+    background: var(--card); border-radius: 8px; padding: 12px 16px; margin-bottom: 8px;
+    border-left: 4px solid var(--text-muted);
+  }
+  .suggestion-card.critical { border-left-color: var(--critical); }
+  .suggestion-card.warning { border-left-color: var(--warning); }
+  .suggestion-card.info { border-left-color: var(--cyan); }
+  .suggestion-card .stitle { font-weight: 600; font-size: 0.92rem; }
+  .suggestion-card .stitle .sev-tag { font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.04em; margin-right: 8px; padding: 1px 6px; border-radius: 4px; }
+  .suggestion-card.critical .sev-tag { background: rgba(208,59,59,0.2); color: #ff8080; }
+  .suggestion-card.warning .sev-tag { background: rgba(237,161,0,0.18); color: var(--warning); }
+  .suggestion-card.info .sev-tag { background: rgba(79,195,247,0.15); color: var(--cyan); }
+  .suggestion-card .sdetail { font-size: 0.85rem; color: var(--text-secondary); margin-top: 4px; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
+  thead th {
+    text-align: right; color: var(--text-secondary); font-weight: 600; font-size: 0.7rem;
+    text-transform: uppercase; letter-spacing: 0.03em; padding: 8px 10px; border-bottom: 1px solid var(--card-border);
+  }
+  thead th:first-child, thead th:nth-child(2) { text-align: left; }
+  tbody td { padding: 10px; border-bottom: 1px solid var(--card-border); text-align: right; vertical-align: middle; }
+  tbody td:first-child, tbody td:nth-child(2) { text-align: left; }
+  tbody tr:hover { background: rgba(255,255,255,0.02); }
+  .ticker-cell { font-weight: 700; color: var(--amber); }
+  .name-cell { color: var(--text-muted); font-size: 0.78rem; }
+  .risk-chip { display: inline-block; padding: 2px 8px; border-radius: 6px; font-weight: 600; font-size: 0.8rem; }
+  .risk-low { background: rgba(27,175,122,0.18); color: var(--good); }
+  .risk-mid { background: rgba(237,161,0,0.18); color: var(--warning); }
+  .risk-high { background: rgba(208,59,59,0.2); color: #ff8080; }
+
+  .charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 14px; }
+  @media (max-width: 800px) { .charts-row { grid-template-columns: 1fr; } }
+  .chart-card { background: var(--card); border: 1px solid var(--card-border); border-radius: 8px; padding: 4px; }
+
+  .metrics-mini { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px,1fr)); gap: 10px; margin-top: 14px; }
+  .metrics-mini .m { background: var(--card); border: 1px solid var(--card-border); border-radius: 6px; padding: 10px 12px; }
+  .metrics-mini .m .l { font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase; }
+  .metrics-mini .m .v { font-size: 1.05rem; font-weight: 600; margin-top: 2px; }
+
+  .muted { color: var(--text-muted); font-size: 0.82rem; }
+  footer { margin-top: 50px; padding-top: 18px; border-top: 1px solid var(--card-border); color: var(--text-muted); font-size: 0.78rem; }
+  footer a { color: var(--text-secondary); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="topbar">
+    <h1>&#9646; PORTFOLIO DASHBOARD</h1>
+    <div class="meta">Generato: {{ generated_at }} &middot; Aggiornamento automatico settimanale (lunedì) via GitHub Actions</div>
+  </header>
+
+  <nav class="crosslinks">
+    <a href="index.html">&larr; Screening sistematico</a>
+    <a href="custom-portfolio.html">Portafoglio EUR 7.000</a>
+    <a href="custom-portfolio-5k.html">Portafoglio EUR 5.000</a>
+  </nav>
+
+  <div class="stat-grid">
+    <div class="stat-card">
+      <div class="label">Valore totale</div>
+      <div class="value num">&euro;{{ "%.2f"|format(total_value_eur) }}</div>
+      {% if wow.available %}
+        <div class="sub {{ 'up' if wow.total_change_pct >= 0 else 'down' }}">
+          {{ "%+.2f"|format(wow.total_change_pct*100) }}% dal {{ wow.as_of }}
+        </div>
+      {% else %}
+        <div class="sub">prima rilevazione — nessun confronto settimanale ancora</div>
+      {% endif %}
+    </div>
+    <div class="stat-card">
+      <div class="label">Beta (media pesata)</div>
+      <div class="value num">{{ "%.2f"|format(portfolio_beta) if portfolio_beta is not none else "N/A" }}</div>
+      <div class="sub">vs S&amp;P 500 = 1.00</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Volatilità 1y (pesata)</div>
+      <div class="value num">{{ "%.1f"|format(portfolio_vol*100) if portfolio_vol is not none else "N/A" }}%</div>
+      <div class="sub">media pesata, non aggiustata per covarianza</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Risk rating (pesato)</div>
+      <div class="value num">{{ "%.1f"|format(portfolio_risk_rating) if portfolio_risk_rating is not none else "N/A" }}/10</div>
+      <div class="sub">beta+volatilità+leva+valuta</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Split valutario</div>
+      <div class="value num">{{ "%.0f"|format(eur_weight) }}% / {{ "%.0f"|format(usd_weight) }}%</div>
+      <div class="sub">EUR / USD</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Commissioni stimate</div>
+      <div class="value num">&euro;{{ "%.0f"|format(total_commissions_eur) }}</div>
+      <div class="sub">{{ "%.2f"|format(commission_drag_pct) if commission_drag_pct is not none else "N/A" }}% del valore corrente</div>
+    </div>
+  </div>
+
+  <h2>Suggerimenti di gestione <span class="badge badge-estimate">Estimate</span></h2>
+  <p class="muted">Ogni suggerimento nasce da una soglia fissa e dichiarata su dati live (peso, risk rating, stop-loss, zona di ingresso, target di prezzo, split valutario, taglia minima di trade) — non è un'opinione generata ex novo ogni volta.</p>
+  {% for s in suggestions %}
+    <div class="suggestion-card {{ s.severity }}">
+      <div class="stitle"><span class="sev-tag">{{ s.severity }}</span>{{ s.title }}</div>
+      <div class="sdetail">{{ s.detail }}</div>
+    </div>
+  {% else %}
+    <p class="muted">Nessun alert al momento.</p>
+  {% endfor %}
+
+  <h2>Posizioni <span class="badge badge-fact">Fact</span></h2>
+  <div style="overflow-x:auto;">
+  <table>
+    <thead>
+      <tr>
+        <th>Ticker</th><th>Nome</th><th>Azioni</th><th>Prezzo</th><th>Var. giorno</th>
+        <th>Var. settimana</th><th>Peso</th><th>Beta</th><th>Vol 1y</th><th>Risk</th><th>Trend 90gg</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in rows %}
+      <tr>
+        <td class="ticker-cell">{{ r.ticker }}</td>
+        <td class="name-cell">{{ r.name }}</td>
+        <td class="num">{{ r.shares }}</td>
+        <td class="num">{{ "%.2f"|format(r.price_native) if r.price_native is not none else "N/A" }} {{ r.currency }}</td>
+        <td class="num {{ 'up' if (r.day_change_pct or 0) >= 0 else 'down' }}">
+          {{ "%+.2f"|format(r.day_change_pct) if r.day_change_pct is not none else "N/A" }}%
+        </td>
+        <td class="num {% if wow.available and wow.per_ticker[r.ticker].price_change_pct is not none %}{{ 'up' if wow.per_ticker[r.ticker].price_change_pct >= 0 else 'down' }}{% endif %}">
+          {% if wow.available and wow.per_ticker[r.ticker].price_change_pct is not none %}
+            {{ "%+.2f"|format(wow.per_ticker[r.ticker].price_change_pct*100) }}%
+          {% else %}—{% endif %}
+        </td>
+        <td class="num">{{ "%.1f"|format(r.weight_pct) }}%</td>
+        <td class="num">{{ "%.2f"|format(r.beta) if r.beta is not none else "N/A" }}</td>
+        <td class="num">{{ "%.1f"|format(r.vol_1y*100) if r.vol_1y is not none else "N/A" }}%</td>
+        <td class="num">
+          {% if r.risk_rating is not none %}
+            <span class="risk-chip {{ 'risk-low' if r.risk_rating < 4 else ('risk-mid' if r.risk_rating < 7 else 'risk-high') }}">{{ "%.1f"|format(r.risk_rating) }}</span>
+          {% else %}N/A{% endif %}
+        </td>
+        <td>{{ r.sparkline|safe }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+
+  <h2>Allocazione e rischio</h2>
+  <div class="charts-row">
+    <div class="chart-card">{{ weight_donut|safe }}</div>
+    <div class="chart-card">{{ risk_bar|safe }}</div>
+  </div>
+
+  <h2>Backtest (3y trailing, pesi attuali) <span class="badge badge-fact">Fact-derived</span></h2>
+  <p class="muted">Look-back sul basket di OGGI proiettato indietro — non è il tuo rendimento reale (non conosciamo le date/prezzi di acquisto) e non è una previsione.</p>
+  {% if backtest_chart %}
+    <div class="chart-card">{{ backtest_chart|safe }}</div>
+    <div class="metrics-mini">
+      <div class="m"><div class="l">Rendimento totale</div><div class="v num">{{ "%+.1f"|format(backtest.portfolio_metrics.total_return_pct*100) }}%</div></div>
+      <div class="m"><div class="l">CAGR</div><div class="v num">{{ "%+.1f"|format(backtest.portfolio_metrics.cagr_pct*100) }}%</div></div>
+      <div class="m"><div class="l">Volatilità ann.</div><div class="v num">{{ "%.1f"|format(backtest.portfolio_metrics.annualized_volatility_pct*100) }}%</div></div>
+      <div class="m"><div class="l">Max drawdown</div><div class="v num">{{ "%.1f"|format(backtest.portfolio_metrics.max_drawdown_pct*100) }}%</div></div>
+      <div class="m"><div class="l">Sharpe</div><div class="v num">{{ "%.2f"|format(backtest.portfolio_metrics.sharpe_ratio) if backtest.portfolio_metrics.sharpe_ratio is not none else "N/A" }}</div></div>
+    </div>
+  {% else %}
+    <p class="muted">Backtest non disponibile: {{ backtest.error }}</p>
+  {% endif %}
+
+  <h2>5 scenari a 12 mesi <span class="badge badge-estimate">Estimate</span></h2>
+  <div class="chart-card">{{ scenario_chart|safe }}</div>
+
+  <footer>
+    <p><span class="badge badge-fact">Fact</span> dati live da Yahoo Finance al momento della generazione &middot;
+       <span class="badge badge-estimate">Estimate</span> calcolo su assunzioni dichiarate &middot;
+       <span class="badge badge-opinion">Opinion</span> giudizio qualitativo.</p>
+    <p>Solo ricerca educativa, non consulenza finanziaria personalizzata. Le decisioni di investimento restano tue.</p>
+    <p><a href="index.html">Screening sistematico</a> &middot; <a href="custom-portfolio.html">Portafoglio EUR 7.000</a> &middot; <a href="custom-portfolio-5k.html">Portafoglio EUR 5.000</a></p>
+  </footer>
+
+</div>
+</body>
+</html>

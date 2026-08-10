@@ -79,6 +79,37 @@ cross-linked with both other reports.
 Runtime is a few minutes — the script deliberately pauses briefly between tickers
 to avoid Yahoo Finance rate limits.
 
+## Portfolio dashboard (real holdings, auto-refreshed weekly)
+
+`python dashboard_main.py` builds a Bloomberg-style dark dashboard for the ACTUAL shares
+held (real quantities: SAN.PA 14, NVDA 4, VRT 4, ASML.AS 1, CRWV 10, NOW 6 - edit the
+`HOLDINGS` dict at the top of the script when the real position changes), not a
+target-weight construction like the other two custom reports. It shows current market
+value, weight per position, beta/volatility/risk-rating (portfolio-level weighted
+averages and per-position), price targets, entry-zone/stop-loss, 90-day sparklines,
+the same trailing-3y backtest and 5-scenario analysis as the other reports, and a
+**rule-based curation-suggestions panel** - every alert (concentration, high risk
+rating, stop-loss breach, entry-zone proximity, price vs bull/bear target, currency
+imbalance, minimum-efficient-trade-size given the user's real commission costs) comes
+from a disclosed, fixed threshold on live data, not a fresh opinion each run
+(`screener/dashboard.py`'s `curation_suggestions()`).
+
+Unlike the other reports, this one carries state between runs:
+`data/dashboard_history.json` keeps the last ~26 weekly snapshots so the dashboard can
+show week-over-week price/weight deltas, not just a point-in-time view. A GitHub
+Actions workflow (`.github/workflows/weekly-dashboard.yml`) re-runs the script every
+Monday 06:00 UTC and commits the refreshed `docs/dashboard.html` + history file
+automatically - no manual step needed once it's set up (can also be triggered manually
+via the Actions tab, `workflow_dispatch`). Output: `docs/dashboard.html`.
+
+Commission assumptions (`COMMISSIONS` dict, user-stated): ~EUR 21/trade for US-listed
+names, ~EUR 1/trade for EU-listed names - used only to estimate total commission drag
+and the minimum-efficient-trade-size suggestion, not fed into any valuation.
+
+Note: this dashboard shows *current market value*, not real profit/loss - actual
+entry prices/dates aren't tracked (the user hasn't supplied them), so there is no P&L
+column. It answers "what does my portfolio look like today," not "am I up or down."
+
 ## Data sources (all free, no API key)
 
 - **Prices, fundamentals, financials, dividends, analyst estimates:** [Yahoo Finance](https://finance.yahoo.com)
@@ -136,6 +167,7 @@ numbers it produced.
 main.py                     entry point for the systematic 10-stock screen
 custom_main.py               entry point for the custom 8-stock, EUR 7,000, whole-share portfolio
 custom_main_5k.py             entry point for the custom 9-stock, EUR 5,000, whole-share portfolio
+dashboard_main.py             entry point for the real-holdings dashboard (re-run weekly)
 screener/
   config.py                 universe, thresholds, weights, valuation & FX assumptions
   fetch.py                  yfinance + FX pulls, retries, fallbacks
@@ -148,14 +180,20 @@ screener/
   scenarios.py              5 forward-looking 12-month scenarios (bull/base/bear/rate/FX)
   qualitative.py            moat write-ups (OPINION, not runtime data)
   business_profile.py       business units / customers / key risks per covered stock (OPINION, not runtime data)
-  charts.py                 Plotly figure builders
-  report.py                 Jinja2 context builder + HTML renderer (shared by both reports)
+  charts.py                 Plotly figure builders (light theme, used by the 3 report pages)
+  dashboard_charts.py       Plotly figure builders (dark theme, used by the dashboard only)
+  dashboard.py              real-holdings context builder, week-over-week history, curation-suggestion engine
+  report.py                 Jinja2 context builder + HTML renderer (shared by all 4 pages)
   templates/report_template.html            systematic screen report
-  templates/custom_portfolio_template.html  custom portfolio report
+  templates/custom_portfolio_template.html  custom portfolio reports (EUR 7k and 5k)
+  templates/dashboard_template.html         real-holdings dashboard
 data/                       audit snapshots (raw universe pull + final picks), timestamped
+data/dashboard_history.json  weekly dashboard snapshots (kept, not timestamped-pruned - powers week-over-week deltas)
 docs/index.html             the systematic screen report (served by GitHub Pages)
 docs/custom-portfolio.html  the EUR 7,000 custom portfolio report (served by GitHub Pages)
 docs/custom-portfolio-5k.html  the EUR 5,000 custom portfolio report (served by GitHub Pages)
+docs/dashboard.html         the real-holdings dashboard, auto-refreshed weekly (served by GitHub Pages)
+.github/workflows/weekly-dashboard.yml  cron job that re-runs dashboard_main.py every Monday and commits the result
 requirements.txt
 ```
 
