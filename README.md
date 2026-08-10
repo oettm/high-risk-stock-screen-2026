@@ -86,29 +86,49 @@ held (real quantities: SAN.PA 14, NVDA 4, VRT 4, ASML.AS 1, CRWV 10, NOW 6 - edi
 `HOLDINGS` dict at the top of the script when the real position changes), not a
 target-weight construction like the other two custom reports. It shows current market
 value, weight per position, beta/volatility/risk-rating (portfolio-level weighted
-averages and per-position), price targets, entry-zone/stop-loss, 90-day sparklines,
-the same trailing-3y backtest and 5-scenario analysis as the other reports, and a
-**rule-based curation-suggestions panel** - every alert (concentration, high risk
-rating, stop-loss breach, entry-zone proximity, price vs bull/bear target, currency
-imbalance, minimum-efficient-trade-size given the user's real commission costs) comes
-from a disclosed, fixed threshold on live data, not a fresh opinion each run
-(`screener/dashboard.py`'s `curation_suggestions()`).
+averages and per-position), price targets, entry-zone/stop-loss, the same trailing-3y
+backtest and 5-scenario analysis as the other reports, plus four things unique to this
+page:
+
+- **Real P&L**: `COST_BASIS_EUR` at the top of `dashboard_main.py` holds what was
+  actually paid per position, in EUR, excluding commissions (`None` until filled in -
+  a position without a cost basis renders "N/A", never a guessed number). Once set,
+  the dashboard shows per-position and total gain/loss in EUR and %, clearly
+  distinguished from the hindsight backtest below it.
+- **Portfolio evolution chart**: unlike the backtest (a look-back over today's basket
+  projected backward), this is the *real* portfolio value at each weekly run, read
+  from `data/dashboard_history.json` - a single point on the first run, growing one
+  point every Monday.
+- **Full per-stock price charts**: 2y price history with entry-zone/stop-loss bands
+  for each held name (`screener/dashboard_charts.py`'s `stock_price_chart_dark()`),
+  in addition to the compact 90-day sparkline in the positions table.
+- **News + sentiment, with a filter toggle**: `screener/news_sentiment.py` pulls each
+  ticker's recent headlines via `yfinance`'s `Ticker.news` (no API key) and classifies
+  each one Positive/Negative/Neutral with VADER - but VADER's base lexicon is tuned for
+  social-media text and returns "neutral" on almost every financial headline (tested:
+  "beats earnings estimates" and "stock plunges" both score 0.0 unmodified), so its
+  lexicon is extended with ~70 hand-picked finance terms (`FINANCE_LEXICON`) layered on
+  top of VADER's own negation/intensifier rules. This is a disclosed heuristic on
+  headline+summary text, not a trained model or an editorial judgment - labeled
+  Estimate in the dashboard. The in-page toggle (vanilla JS, no framework) filters the
+  list to Tutte/Positive/Negative/Neutre.
+
+An earlier version of this dashboard had a rule-based curation-suggestions panel
+(concentration/risk/stop-loss/entry-zone/bull-bear-breach/currency-imbalance alerts);
+it was removed at the user's request in favor of the features above.
 
 Unlike the other reports, this one carries state between runs:
 `data/dashboard_history.json` keeps the last ~26 weekly snapshots so the dashboard can
-show week-over-week price/weight deltas, not just a point-in-time view. A GitHub
-Actions workflow (`.github/workflows/weekly-dashboard.yml`) re-runs the script every
-Monday 06:00 UTC and commits the refreshed `docs/dashboard.html` + history file
-automatically - no manual step needed once it's set up (can also be triggered manually
-via the Actions tab, `workflow_dispatch`). Output: `docs/dashboard.html`.
+show week-over-week price/weight deltas and the real portfolio-evolution chart, not
+just a point-in-time view. A GitHub Actions workflow
+(`.github/workflows/weekly-dashboard.yml`) re-runs the script every Monday 06:00 UTC
+and commits the refreshed `docs/dashboard.html` + history file automatically - no
+manual step needed once it's set up (can also be triggered manually via the Actions
+tab, `workflow_dispatch`). Output: `docs/dashboard.html`.
 
 Commission assumptions (`COMMISSIONS` dict, user-stated): ~EUR 21/trade for US-listed
-names, ~EUR 1/trade for EU-listed names - used only to estimate total commission drag
-and the minimum-efficient-trade-size suggestion, not fed into any valuation.
-
-Note: this dashboard shows *current market value*, not real profit/loss - actual
-entry prices/dates aren't tracked (the user hasn't supplied them), so there is no P&L
-column. It answers "what does my portfolio look like today," not "am I up or down."
+names, ~EUR 1/trade for EU-listed names - used only to estimate total commission drag,
+not fed into any valuation.
 
 ## Data sources (all free, no API key)
 
@@ -182,7 +202,8 @@ screener/
   business_profile.py       business units / customers / key risks per covered stock (OPINION, not runtime data)
   charts.py                 Plotly figure builders (light theme, used by the 3 report pages)
   dashboard_charts.py       Plotly figure builders (dark theme, used by the dashboard only)
-  dashboard.py              real-holdings context builder, week-over-week history, curation-suggestion engine
+  dashboard.py              real-holdings context builder, week-over-week history, real P&L
+  news_sentiment.py         yfinance news pull + finance-tuned VADER sentiment classification
   report.py                 Jinja2 context builder + HTML renderer (shared by all 4 pages)
   templates/report_template.html            systematic screen report
   templates/custom_portfolio_template.html  custom portfolio reports (EUR 7k and 5k)

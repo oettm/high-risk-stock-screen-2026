@@ -27,6 +27,7 @@ from screener.scoring import apply_screen, compute_composite_scores, compute_ris
 from screener.valuation import build_price_targets
 from screener.backtest import run_backtest
 from screener.scenarios import build_scenario_analysis, SCENARIO_KEYS
+from screener.news_sentiment import fetch_all_news
 from screener.dashboard import build_dashboard_context
 from screener.report import render_report
 
@@ -40,6 +41,12 @@ HOLDINGS = {"SAN.PA": 14, "NVDA": 4, "VRT": 4, "ASML.AS": 1, "CRWV": 10, "NOW": 
 
 # Disclosed commission assumptions (user-stated: ~20-22 EUR/US trade, ~1 EUR/EU trade).
 COMMISSIONS = {"us_trade_eur": 21.0, "eu_trade_eur": 1.0}
+
+# Real EUR cost basis per position - what was actually paid, EXCLUDING commissions
+# (commissions are tracked separately above). Set to None until known: the dashboard
+# will render "N/A" for that position's P&L rather than guess. Fill these in with your
+# real purchase amounts (e.g. from your broker's transaction history) to get real P&L.
+COST_BASIS_EUR = {"SAN.PA": None, "NVDA": None, "VRT": None, "ASML.AS": None, "CRWV": None, "NOW": None}
 
 # CRWV isn't in the curated 50-name UNIVERSE (config.py) - added here as an extra
 # Instrument bucketed into AI/Enterprise Software purely for peer-percentile
@@ -114,16 +121,21 @@ def main() -> None:
         list(HOLDINGS.keys()), passed, price_targets, instruments, fx_rates, allocation
     )
 
+    print("Fetching news + sentiment for the 6 held names (Yahoo Finance, finance-tuned VADER)...")
+    news = fetch_all_news(list(HOLDINGS.keys()), run_started, max_items_per_ticker=6)
+    print(f"  {len(news)} news items fetched")
+
     print("Building dashboard context (incl. week-over-week vs data/dashboard_history.json)...")
     context = build_dashboard_context(
         HOLDINGS, instruments, raw, passed, price_targets, risk_ratings, fx_rates,
-        COMMISSIONS, backtest, scenario_analysis, SCENARIO_KEYS, HISTORY_PATH, run_started,
+        COMMISSIONS, COST_BASIS_EUR, news, backtest, scenario_analysis, SCENARIO_KEYS,
+        HISTORY_PATH, run_started,
     )
 
     out_path = DOCS_DIR / "dashboard.html"
     render_report(context, out_path, template_name="dashboard_template.html")
     print(f"Dashboard written to {out_path}")
-    print(f"Total value: EUR {context['total_value_eur']:.2f}  |  {len(context['suggestions'])} suggestions")
+    print(f"Total value: EUR {context['total_value_eur']:.2f}  |  P&L coverage: {context['pnl_coverage']}")
     print("Done.")
 
 

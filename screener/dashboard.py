@@ -7,13 +7,12 @@ construction, and is meant to be regenerated weekly (see
 
 Two things live here that don't exist in the other reports:
   - a small local history file (data/dashboard_history.json) so week-over-
-    week price/weight deltas can be shown instead of only a point-in-time
-    snapshot;
-  - a rule-based "curation suggestions" engine: every suggestion is derived
-    from a disclosed, fixed threshold on live data (concentration, risk
-    rating, stop-loss breach, entry-zone proximity, price vs bull/bear
-    target, currency split, minimum-efficient-trade-size given the user's
-    real commission costs) - not a model opinion generated fresh each run.
+    week price/weight deltas AND a real (not hindsight-backtest) portfolio-
+    value-over-time chart can be shown, growing one point per weekly run;
+  - real P&L: the user's actual EUR cost basis per position (what they
+    stated they paid, excluding commissions), so gain/loss is computed
+    against real money in, not just today's mark-to-market. Any position
+    without a supplied cost basis renders "N/A" rather than a guessed number.
 """
 
 from __future__ import annotations
@@ -65,111 +64,6 @@ def week_over_week(current_rows: list[dict], current_total_eur: float, previous:
     return {"available": True, "as_of": previous.get("date"), "total_change_pct": total_change_pct, "per_ticker": per_ticker}
 
 
-def curation_suggestions(
-    rows: list[dict],
-    price_targets: dict,
-    instruments: dict[str, Instrument],
-    us_trade_fee_eur: float,
-    eu_trade_fee_eur: float,
-) -> list[dict]:
-    suggestions: list[dict] = []
-
-    def add(severity: str, title: str, detail: str) -> None:
-        suggestions.append({"severity": severity, "title": title, "detail": detail})
-
-    eur_weight = sum(r["weight_pct"] for r in rows if r["currency"] == "EUR")
-    usd_weight = 100.0 - eur_weight
-
-    for r in rows:
-        t = r["ticker"]
-        pt = price_targets.get(t, {})
-        mult, peg = pt.get("multiples", {}), pt.get("peg", {})
-        price = r["price_native"]
-
-        if r["weight_pct"] >= 25:
-            add(
-                "warning", f"{t}: concentrazione elevata",
-                f"Pesa il {r['weight_pct']:.1f}% del portafoglio - spesso l'effetto di un prezzo per azione alto "
-                "e non frazionabile piuttosto che una scelta deliberata. Una singola posizione di questa taglia "
-                "domina il rischio complessivo indipendentemente dal suo beta.",
-            )
-
-        rating = r.get("risk_rating")
-        if rating is not None and rating >= 8:
-            add(
-                "warning", f"{t}: risk rating elevato ({rating:.1f}/10)",
-                "Tra le posizioni più rischiose del paniere su beta/volatilità/leva combinati - dimensiona la "
-                "posizione, e la tua tolleranza a un eventuale drawdown, di conseguenza.",
-            )
-
-        stop = r.get("stop_loss")
-        if stop is not None and price is not None and price <= stop:
-            add(
-                "critical", f"{t}: sotto il livello di stop-loss tecnico",
-                f"Prezzo {price:.2f} {r['currency']} <= stop {stop:.2f} (50gg MA − 2×ATR14) - rivedi la posizione, "
-                "questo è un segnale tecnico, non un ordine automatico.",
-            )
-
-        elow, ehigh = r.get("entry_zone_low"), r.get("entry_zone_high")
-        if elow is not None and ehigh is not None and price is not None and elow <= price <= ehigh:
-            add(
-                "info", f"{t}: nella propria zona di ingresso tecnica",
-                f"Prezzo {price:.2f} {r['currency']} entro la banda {elow:.2f}-{ehigh:.2f} - punto tecnicamente "
-                "ragionevole per aumentare l'esposizione, se è quello che vuoi fare.",
-            )
-
-        bull = mult.get("bull_price") or peg.get("bull_price")
-        if bull is not None and price is not None and price > bull:
-            add(
-                "info", f"{t}: tratta sopra il proprio bull case ({bull:.2f})",
-                "Il modello non vede più upside nemmeno nello scenario ottimistico a questo prezzo - valuta una "
-                "presa di profitto parziale o verifica se il bull case va aggiornato con nuovi dati.",
-            )
-
-        bear = mult.get("bear_price") or peg.get("bear_price")
-        if bear is not None and price is not None and price < bear:
-            add(
-                "warning", f"{t}: tratta sotto il proprio bear case ({bear:.2f})",
-                "Il mercato sta scontando uno scenario peggiore del nostro bear case - verifica se ci sono notizie "
-                "fondamentali specifiche prima di considerarlo automaticamente un'opportunità.",
-            )
-
-        if mult.get("bull_price") is None and peg.get("bull_price") is None:
-            add(
-                "info", f"{t}: nessun target di prezzo calcolabile",
-                "EPS forward negativo o dati insufficienti - monitora questa posizione qualitativamente "
-                "(notizie, trimestrali), non con un target numerico.",
-            )
-
-    if eur_weight < 30:
-        add(
-            "info", "Split valutario sbilanciato verso USD",
-            f"EUR {eur_weight:.0f}% / USD {usd_weight:.0f}% del portafoglio - esposizione cambio EUR/USD "
-            "concentrata; valuta se coprire (posizione corta EUR/USD) o far crescere le posizioni EUR con "
-            "i prossimi versamenti.",
-        )
-    elif eur_weight > 70:
-        add(
-            "info", "Split valutario sbilanciato verso EUR",
-            f"EUR {eur_weight:.0f}% / USD {usd_weight:.0f}% del portafoglio.",
-        )
-
-    min_us_trade = us_trade_fee_eur / 0.02 if us_trade_fee_eur else None
-    min_eu_trade = eu_trade_fee_eur / 0.02 if eu_trade_fee_eur else None
-    if min_us_trade or min_eu_trade:
-        add(
-            "info", "Taglio minimo efficiente per il prossimo trade",
-            f"Con una commissione stimata di EUR {us_trade_fee_eur:.0f} sui titoli USA, un ordine sotto ~EUR "
-            f"{min_us_trade:,.0f} costa oltre il 2% in commissioni; sui titoli EU (fee EUR {eu_trade_fee_eur:.0f}) "
-            f"la soglia scende a ~EUR {min_eu_trade:,.0f}. Accumulare prima di comprare piccoli tagli USA riduce "
-            "il drag.",
-        )
-
-    severity_order = {"critical": 0, "warning": 1, "info": 2}
-    suggestions.sort(key=lambda s: severity_order.get(s["severity"], 3))
-    return suggestions
-
-
 def build_dashboard_context(
     holdings: dict[str, int],
     instruments: dict[str, Instrument],
@@ -179,6 +73,8 @@ def build_dashboard_context(
     risk_ratings: dict,
     fx_rates: dict,
     commissions: dict,
+    cost_basis_eur: dict[str, float | None],
+    news: list[dict],
     backtest: dict,
     scenario_analysis: dict,
     scenario_keys: list[str],
@@ -201,10 +97,21 @@ def build_dashboard_context(
 
         raw = raw_by_ticker.get(t)
         sparkline_html = "<span style='color:#6b6a63;'>n/d</span>"
+        price_chart_html = "<p class='muted'>Nessuno storico prezzi disponibile.</p>"
         if raw is not None and raw.history is not None and not raw.history.empty:
             scale = 100.0 if inst.pence_quoted else 1.0
-            closes = (raw.history["Close"] / scale).tail(90).tolist()
-            sparkline_html = dc.sparkline_chart(closes)
+            closes_full = (raw.history["Close"] / scale)
+            sparkline_html = dc.sparkline_chart(closes_full.tail(90).tolist())
+            dates_full = [d.strftime("%Y-%m-%d") for d in raw.history.index]
+            price_chart_html = dc.stock_price_chart_dark(
+                t, dates_full, closes_full.tolist(), tech.get("ma50"),
+                tech.get("entry_zone_low"), tech.get("entry_zone_high"),
+                tech.get("stop_loss"), inst.currency,
+            )
+
+        cost_eur = cost_basis_eur.get(t)
+        pnl_eur = (eur_amount - cost_eur) if cost_eur is not None else None
+        pnl_pct = (eur_amount / cost_eur - 1) if cost_eur else None
 
         rows.append({
             "ticker": t, "name": m["long_name"], "shares": shares,
@@ -216,6 +123,8 @@ def build_dashboard_context(
             "beta": m["beta_vol"].get("beta"), "vol_1y": m["beta_vol"].get("annualized_volatility_1y"),
             "risk_rating": risk_ratings.get(t, {}).get("rating"),
             "sparkline": sparkline_html,
+            "price_chart": price_chart_html,
+            "cost_basis_eur": cost_eur, "pnl_eur": pnl_eur, "pnl_pct": pnl_pct,
             "as_of": m.get("as_of"),
         })
 
@@ -226,6 +135,14 @@ def build_dashboard_context(
     n_eu = sum(1 for t in holdings if instruments[t].currency == "EUR")
     total_commissions = n_us * commissions["us_trade_eur"] + n_eu * commissions["eu_trade_eur"]
 
+    known_cost_rows = [r for r in rows if r["cost_basis_eur"] is not None]
+    total_cost_basis_eur = sum(r["cost_basis_eur"] for r in known_cost_rows) if known_cost_rows else None
+    total_pnl_eur = (sum(r["eur_amount"] for r in known_cost_rows) - total_cost_basis_eur) if total_cost_basis_eur else None
+    total_pnl_pct = (
+        sum(r["eur_amount"] for r in known_cost_rows) / total_cost_basis_eur - 1
+    ) if total_cost_basis_eur else None
+    pnl_coverage = f"{len(known_cost_rows)}/{len(rows)}"
+
     history = load_history(history_path)
     previous = history[-1] if history else None
     wow = week_over_week(rows, total_eur, previous)
@@ -235,7 +152,7 @@ def build_dashboard_context(
         "total_value_eur": total_eur,
         "positions": {r["ticker"]: {"price_eur": r["price_eur"], "weight_pct": r["weight_pct"]} for r in rows},
     }
-    append_history(history_path, today_snapshot)
+    full_history = append_history(history_path, today_snapshot)
 
     def _wavg(key):
         vals = [(r[key], r["weight_pct"]) for r in rows if r.get(key) is not None]
@@ -249,9 +166,6 @@ def build_dashboard_context(
     eur_weight = sum(r["weight_pct"] for r in rows if r["currency"] == "EUR")
     usd_weight = 100.0 - eur_weight
 
-    suggestions = curation_suggestions(rows, price_targets, instruments,
-                                        commissions["us_trade_eur"], commissions["eu_trade_eur"])
-
     weight_donut = dc.weight_donut_dark(rows)
     risk_bar = dc.risk_bar_dark(rows)
     backtest_chart_html = None
@@ -263,6 +177,9 @@ def build_dashboard_context(
         [scenario_analysis["portfolio"][k]["ending_value_eur"] for k in scenario_keys],
         total_eur,
     )
+    evolution_chart_html = dc.portfolio_evolution_chart_dark(
+        [h["date"] for h in full_history], [h["total_value_eur"] for h in full_history], total_cost_basis_eur,
+    )
 
     return {
         "generated_at": generated_at.strftime("%Y-%m-%d %H:%M UTC"),
@@ -270,13 +187,18 @@ def build_dashboard_context(
         "total_value_eur": total_eur,
         "total_commissions_eur": total_commissions,
         "commission_drag_pct": (total_commissions / total_eur * 100) if total_eur else None,
+        "total_cost_basis_eur": total_cost_basis_eur,
+        "total_pnl_eur": total_pnl_eur,
+        "total_pnl_pct": total_pnl_pct,
+        "pnl_coverage": pnl_coverage,
+        "pnl_complete": len(known_cost_rows) == len(rows),
         "wow": wow,
         "portfolio_beta": portfolio_beta,
         "portfolio_vol": portfolio_vol,
         "portfolio_risk_rating": portfolio_risk_rating,
         "eur_weight": eur_weight,
         "usd_weight": usd_weight,
-        "suggestions": suggestions,
+        "news": news,
         "backtest": backtest,
         "backtest_chart": backtest_chart_html,
         "scenario_analysis": scenario_analysis,
@@ -284,5 +206,7 @@ def build_dashboard_context(
         "scenario_chart": scenario_chart_html,
         "weight_donut": weight_donut,
         "risk_bar": risk_bar,
+        "evolution_chart": evolution_chart_html,
+        "history_points": len(full_history),
         "price_targets": price_targets,
     }

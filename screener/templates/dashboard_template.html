@@ -57,20 +57,6 @@
   h2 { font-size: 1.05rem; color: var(--text-primary); margin: 32px 0 12px; padding-bottom: 6px; border-bottom: 1px solid var(--card-border); }
   h2 .badge { margin-left: 8px; vertical-align: middle; }
 
-  .suggestion-card {
-    background: var(--card); border-radius: 8px; padding: 12px 16px; margin-bottom: 8px;
-    border-left: 4px solid var(--text-muted);
-  }
-  .suggestion-card.critical { border-left-color: var(--critical); }
-  .suggestion-card.warning { border-left-color: var(--warning); }
-  .suggestion-card.info { border-left-color: var(--cyan); }
-  .suggestion-card .stitle { font-weight: 600; font-size: 0.92rem; }
-  .suggestion-card .stitle .sev-tag { font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.04em; margin-right: 8px; padding: 1px 6px; border-radius: 4px; }
-  .suggestion-card.critical .sev-tag { background: rgba(208,59,59,0.2); color: #ff8080; }
-  .suggestion-card.warning .sev-tag { background: rgba(237,161,0,0.18); color: var(--warning); }
-  .suggestion-card.info .sev-tag { background: rgba(79,195,247,0.15); color: var(--cyan); }
-  .suggestion-card .sdetail { font-size: 0.85rem; color: var(--text-secondary); margin-top: 4px; }
-
   table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
   thead th {
     text-align: right; color: var(--text-secondary); font-weight: 600; font-size: 0.7rem;
@@ -90,11 +76,31 @@
   .charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 14px; }
   @media (max-width: 800px) { .charts-row { grid-template-columns: 1fr; } }
   .chart-card { background: var(--card); border: 1px solid var(--card-border); border-radius: 8px; padding: 4px; }
+  .stock-charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 14px; }
+  @media (max-width: 800px) { .stock-charts-grid { grid-template-columns: 1fr; } }
 
   .metrics-mini { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px,1fr)); gap: 10px; margin-top: 14px; }
   .metrics-mini .m { background: var(--card); border: 1px solid var(--card-border); border-radius: 6px; padding: 10px 12px; }
   .metrics-mini .m .l { font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase; }
   .metrics-mini .m .v { font-size: 1.05rem; font-weight: 600; margin-top: 2px; }
+
+  .toggle-group { display: flex; gap: 6px; margin: 10px 0 16px; flex-wrap: wrap; }
+  .toggle-btn {
+    background: var(--card); border: 1px solid var(--card-border); color: var(--text-secondary);
+    padding: 6px 14px; border-radius: 20px; font-size: 0.78rem; cursor: pointer; font-weight: 600;
+  }
+  .toggle-btn:hover { color: var(--text-primary); }
+  .toggle-btn.active { background: var(--cyan); color: #06121a; border-color: var(--cyan); }
+
+  .news-card { background: var(--card); border: 1px solid var(--card-border); border-radius: 8px; padding: 12px 16px; margin-bottom: 10px; }
+  .news-head { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; flex-wrap: wrap; }
+  .news-title { display: block; color: var(--text-primary); font-weight: 600; font-size: 0.92rem; text-decoration: none; margin-bottom: 4px; }
+  .news-title:hover { color: var(--cyan); }
+  .news-summary { color: var(--text-secondary); font-size: 0.83rem; }
+  .sentiment-tag { font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.04em; padding: 2px 8px; border-radius: 10px; font-weight: 700; }
+  .sentiment-positive { background: rgba(27,175,122,0.18); color: var(--good); }
+  .sentiment-negative { background: rgba(208,59,59,0.2); color: #ff8080; }
+  .sentiment-neutral { background: rgba(156,154,144,0.18); color: var(--text-secondary); }
 
   .muted { color: var(--text-muted); font-size: 0.82rem; }
   footer { margin-top: 50px; padding-top: 18px; border-top: 1px solid var(--card-border); color: var(--text-muted); font-size: 0.78rem; }
@@ -128,6 +134,16 @@
       {% endif %}
     </div>
     <div class="stat-card">
+      <div class="label">P&amp;L totale</div>
+      {% if total_pnl_eur is not none %}
+        <div class="value num {{ 'up' if total_pnl_eur >= 0 else 'down' }}">{{ "%+.2f"|format(total_pnl_eur) }} &euro;</div>
+        <div class="sub {{ 'up' if total_pnl_pct >= 0 else 'down' }}">{{ "%+.1f"|format(total_pnl_pct*100) }}% su costo di carico ({{ pnl_coverage }} posizioni note)</div>
+      {% else %}
+        <div class="value">N/A</div>
+        <div class="sub">costo di carico non impostato — vedi COST_BASIS_EUR in dashboard_main.py</div>
+      {% endif %}
+    </div>
+    <div class="stat-card">
       <div class="label">Beta (media pesata)</div>
       <div class="value num">{{ "%.2f"|format(portfolio_beta) if portfolio_beta is not none else "N/A" }}</div>
       <div class="sub">vs S&amp;P 500 = 1.00</div>
@@ -153,17 +169,9 @@
       <div class="sub">{{ "%.2f"|format(commission_drag_pct) if commission_drag_pct is not none else "N/A" }}% del valore corrente</div>
     </div>
   </div>
-
-  <h2>Suggerimenti di gestione <span class="badge badge-estimate">Estimate</span></h2>
-  <p class="muted">Ogni suggerimento nasce da una soglia fissa e dichiarata su dati live (peso, risk rating, stop-loss, zona di ingresso, target di prezzo, split valutario, taglia minima di trade) — non è un'opinione generata ex novo ogni volta.</p>
-  {% for s in suggestions %}
-    <div class="suggestion-card {{ s.severity }}">
-      <div class="stitle"><span class="sev-tag">{{ s.severity }}</span>{{ s.title }}</div>
-      <div class="sdetail">{{ s.detail }}</div>
-    </div>
-  {% else %}
-    <p class="muted">Nessun alert al momento.</p>
-  {% endfor %}
+  {% if not pnl_complete %}
+    <p class="muted">P&amp;L calcolato solo su {{ pnl_coverage }} posizioni: le altre non hanno un costo di carico impostato, quindi non vengono incluse né nel P&amp;L totale né nella riga della tabella sotto.</p>
+  {% endif %}
 
   <h2>Posizioni <span class="badge badge-fact">Fact</span></h2>
   <div style="overflow-x:auto;">
@@ -171,7 +179,8 @@
     <thead>
       <tr>
         <th>Ticker</th><th>Nome</th><th>Azioni</th><th>Prezzo</th><th>Var. giorno</th>
-        <th>Var. settimana</th><th>Peso</th><th>Beta</th><th>Vol 1y</th><th>Risk</th><th>Trend 90gg</th>
+        <th>Var. settimana</th><th>Peso</th><th>Costo</th><th>P&amp;L</th>
+        <th>Beta</th><th>Vol 1y</th><th>Risk</th><th>Trend 90gg</th>
       </tr>
     </thead>
     <tbody>
@@ -190,6 +199,12 @@
           {% else %}—{% endif %}
         </td>
         <td class="num">{{ "%.1f"|format(r.weight_pct) }}%</td>
+        <td class="num">{{ "%.2f"|format(r.cost_basis_eur) if r.cost_basis_eur is not none else "N/A" }}</td>
+        <td class="num {% if r.pnl_eur is not none %}{{ 'up' if r.pnl_eur >= 0 else 'down' }}{% endif %}">
+          {% if r.pnl_eur is not none %}
+            {{ "%+.2f"|format(r.pnl_eur) }} ({{ "%+.1f"|format(r.pnl_pct*100) }}%)
+          {% else %}N/A{% endif %}
+        </td>
         <td class="num">{{ "%.2f"|format(r.beta) if r.beta is not none else "N/A" }}</td>
         <td class="num">{{ "%.1f"|format(r.vol_1y*100) if r.vol_1y is not none else "N/A" }}%</td>
         <td class="num">
@@ -204,6 +219,24 @@
   </table>
   </div>
 
+  <h2>Evoluzione del portafoglio <span class="badge badge-fact">Fact</span></h2>
+  <p class="muted">
+    {% if history_points < 3 %}
+      Valore reale settimana per settimana — {{ history_points }} rilevazione{{ "i" if history_points != 1 else "" }} finora, il grafico crescerà ogni lunedì. Non confonderlo con il backtest più sotto (quello è un look-back ipotetico, questo è il valore reale registrato nel tempo).
+    {% else %}
+      Valore reale registrato ad ogni esecuzione settimanale — non è un look-back ipotetico.
+    {% endif %}
+  </p>
+  <div class="chart-card">{{ evolution_chart|safe }}</div>
+
+  <h2>Grafici titoli <span class="badge badge-fact">Fact</span></h2>
+  <p class="muted">Storico prezzo di ciascun titolo, con zona di ingresso tecnica (50gg MA) e stop-loss (−2×ATR14).</p>
+  <div class="stock-charts-grid">
+    {% for r in rows %}
+      <div class="chart-card">{{ r.price_chart|safe }}</div>
+    {% endfor %}
+  </div>
+
   <h2>Allocazione e rischio</h2>
   <div class="charts-row">
     <div class="chart-card">{{ weight_donut|safe }}</div>
@@ -211,7 +244,7 @@
   </div>
 
   <h2>Backtest (3y trailing, pesi attuali) <span class="badge badge-fact">Fact-derived</span></h2>
-  <p class="muted">Look-back sul basket di OGGI proiettato indietro — non è il tuo rendimento reale (non conosciamo le date/prezzi di acquisto) e non è una previsione.</p>
+  <p class="muted">Look-back sul basket di OGGI proiettato indietro — non è il tuo rendimento reale (per quello vedi P&amp;L ed Evoluzione del portafoglio sopra) e non è una previsione.</p>
   {% if backtest_chart %}
     <div class="chart-card">{{ backtest_chart|safe }}</div>
     <div class="metrics-mini">
@@ -228,6 +261,31 @@
   <h2>5 scenari a 12 mesi <span class="badge badge-estimate">Estimate</span></h2>
   <div class="chart-card">{{ scenario_chart|safe }}</div>
 
+  <h2>Notizie &amp; sentiment <span class="badge badge-estimate">Estimate</span></h2>
+  <p class="muted">Titoli e riassunti da Yahoo Finance. Il sentiment è una classificazione automatica (VADER con lessico esteso di termini finanziari) sul testo dell'articolo — un'euristica dichiarata su parole chiave, non un giudizio editoriale né una garanzia di accuratezza.</p>
+  <div class="toggle-group" id="news-toggle">
+    <button class="toggle-btn active" data-filter="all">Tutte ({{ news|length }})</button>
+    <button class="toggle-btn" data-filter="positive">Positive ({{ news|selectattr("sentiment_label","equalto","positive")|list|length }})</button>
+    <button class="toggle-btn" data-filter="negative">Negative ({{ news|selectattr("sentiment_label","equalto","negative")|list|length }})</button>
+    <button class="toggle-btn" data-filter="neutral">Neutre ({{ news|selectattr("sentiment_label","equalto","neutral")|list|length }})</button>
+  </div>
+  <div id="news-list">
+    {% for n in news %}
+    <div class="news-card" data-sentiment="{{ n.sentiment_label }}">
+      <div class="news-head">
+        <span class="ticker-cell">{{ n.ticker }}</span>
+        <span class="sentiment-tag sentiment-{{ n.sentiment_label }}">{{ n.sentiment_label_it }}</span>
+        <span class="muted">{{ n.publisher }} &middot; {{ n.pub_date_display }}</span>
+      </div>
+      {% if n.url %}<a class="news-title" href="{{ n.url }}" target="_blank" rel="noopener">{{ n.title }}</a>
+      {% else %}<div class="news-title">{{ n.title }}</div>{% endif %}
+      {% if n.summary %}<div class="news-summary">{{ n.summary }}</div>{% endif %}
+    </div>
+    {% else %}
+    <p class="muted">Nessuna notizia disponibile in questo momento.</p>
+    {% endfor %}
+  </div>
+
   <footer>
     <p><span class="badge badge-fact">Fact</span> dati live da Yahoo Finance al momento della generazione &middot;
        <span class="badge badge-estimate">Estimate</span> calcolo su assunzioni dichiarate &middot;
@@ -237,5 +295,17 @@
   </footer>
 
 </div>
+<script>
+  document.querySelectorAll('#news-toggle .toggle-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      document.querySelectorAll('#news-toggle .toggle-btn').forEach(function (b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+      var filter = btn.dataset.filter;
+      document.querySelectorAll('#news-list .news-card').forEach(function (card) {
+        card.style.display = (filter === 'all' || card.dataset.sentiment === filter) ? '' : 'none';
+      });
+    });
+  });
+</script>
 </body>
 </html>

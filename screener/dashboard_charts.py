@@ -118,6 +118,42 @@ SCENARIO_COLORS_DARK = {
 }
 
 
+def portfolio_evolution_chart_dark(dates: list[str], values: list[float], cost_basis_eur: float | None) -> str:
+    """Real week-over-week portfolio value from data/dashboard_history.json -
+    not the hindsight backtest. Starts as a single point on the first run and
+    grows one point per week; a flat reference line marks total cost basis
+    once the user has supplied entry prices (screener.dashboard's P&L)."""
+    fig = go.Figure(go.Scatter(x=dates, y=values, mode="lines+markers", name="Valore portafoglio",
+                                line=dict(color=CYAN, width=2.5), marker=dict(size=6)))
+    if cost_basis_eur is not None:
+        fig.add_hline(y=cost_basis_eur, line_dash="dash", line_color="#9c9a90",
+                       annotation_text="Costo di carico totale", annotation_position="bottom left")
+    fig.update_xaxes(gridcolor=DARK_GRID)
+    fig.update_yaxes(gridcolor=DARK_GRID, title="EUR")
+    return _dark_layout(fig, height=340, margin=dict(l=50, r=10, t=30, b=30),
+                         title="Evoluzione del portafoglio (valore reale settimanale)").to_html(
+        full_html=False, include_plotlyjs=False)
+
+
+def stock_price_chart_dark(ticker: str, dates, closes: list[float], ma50, entry_low, entry_high,
+                            stop_loss, currency: str) -> str:
+    if closes is None or len(closes) == 0:
+        return "<p class='muted'>Nessuno storico prezzi disponibile.</p>"
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=dates, y=closes, mode="lines", name="Close", line=dict(color=CYAN, width=1.6)))
+    if entry_low is not None and entry_high is not None:
+        fig.add_hrect(y0=entry_low, y1=entry_high, fillcolor=STATUS_GOOD, opacity=0.15, line_width=0,
+                      annotation_text="Zona di ingresso", annotation_position="top left")
+    if stop_loss is not None:
+        fig.add_hline(y=stop_loss, line_dash="dash", line_color=STATUS_CRITICAL,
+                       annotation_text="Stop-loss", annotation_position="bottom left")
+    fig.update_xaxes(gridcolor=DARK_GRID)
+    fig.update_yaxes(gridcolor=DARK_GRID, title=currency)
+    return _dark_layout(fig, height=300, margin=dict(l=45, r=10, t=35, b=30),
+                         title=f"{ticker} - prezzo, zona di ingresso e stop-loss").to_html(
+        full_html=False, include_plotlyjs=False)
+
+
 def scenario_chart_dark(scenario_keys: list[str], labels: list[str], ending_values: list[float], current_value: float) -> str:
     colors = [SCENARIO_COLORS_DARK.get(k, "#9e9e9e") for k in scenario_keys]
     fig = go.Figure(go.Bar(
